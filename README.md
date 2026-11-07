@@ -1,8 +1,19 @@
-# Ray Client v1.11
+# Ray Client v1.13
 
 A client-side Fabric quality-of-life and visual customization mod for Minecraft 1.21.11.
 
-## What is new in 1.11
+## What is new in 1.13
+
+- **A calmer, more consistent look**: flat graphite surfaces with 1px hairlines, one accent colour used only for state (on, selected, progress, focus), smaller consistent corner radii, text tabs with a sliding underline, plain toggles and sliders, restrained glows. Applies to the module list, every settings page, the start menu, notifications and the buttons in Minecraft's own menus.
+- **Lyrics behave better**: words are timed to how long a line is really sung (not the whole gap to the next line), a sentence never splits into a new group mid-line, the bar keeps one width per song, long lines scroll with the singing instead of shrinking, and floating words fade instead of towering over you when you walk up to them.
+
+## What was new in 1.12
+
+- **Module list**: compact tiles (icon, name, live value, enable and options side by side), more tiles per row, and a bigger window, so you see 8 to 15 modules at once instead of 3. New **Tiles per row** setting (Auto, 2 to 6).
+- **Menu Size** is now a free slider from 50% to 200% (applies when you let go), plus quick-pick chips.
+- **Start menu polish**: GitHub button, a status card that lines up with the button column and shows on/off dots, an update row, and a tip pinned to the bottom.
+
+## What was new in 1.11
 
 - **Auto updater**: Ray Client checks the GitHub Releases of Client-ui/RayClient (about every 6 hours), downloads new versions in the background, verifies them (GitHub only, size, SHA-256, and that the jar really is Ray Client), and installs them when you close the game. The old jar is kept in `mods/ray-backup`. Updates are manual by default: press "Check for updates" on the start menu (or Settings > Updates > Check Now). Settings > Updates can switch to Notify (checks every 6 hours and tells you) or Auto (also downloads in the background). The title screen shows a banner when an update is available.
 
