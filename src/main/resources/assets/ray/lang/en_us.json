@@ -1,0 +1,13 @@
+{
+  "key.ray.menu": "Open Ray Client Menu",
+  "key.ray.zoom": "Zoom",
+  "key.ray.waypoint": "Add Waypoint",
+  "key.ray.copycoords": "Copy Coordinates",
+  "key.ray.stopwatch": "Stopwatch Start/Stop",
+  "key.ray.stopwatchreset": "Stopwatch Reset",
+  "key.ray.lyricsresync": "Resync Lyrics (press when a song starts)",
+  "key.ray.lyricsearlier": "Lyrics Earlier (this song)",
+  "key.ray.lyricslater": "Lyrics Later (this song)",
+  "key.ray.lyricstoggle": "Toggle Lyric Sync",
+  "key.category.ray.main": "Ray Client"
+}
