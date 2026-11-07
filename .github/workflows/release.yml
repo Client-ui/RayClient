@@ -58,4 +58,5 @@ jobs:
           name: Ray Client ${{ env.VER }}
           body_path: notes.md
           generate_release_notes: true
-          files: out/*.jar
+          files: out/*.jar 
+          
