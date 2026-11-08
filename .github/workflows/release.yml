@@ -1,9 +1,7 @@
 name: Release Ray Client
 
 # Publishes a GitHub Release with the mod jar (this is what the in-game updater downloads).
-# To release: set mod_version in gradle.properties (e.g. 1.11.0), commit, then push a tag that matches it:
-#   git tag v1.11.0
-#   git push origin v1.11.0
+# Easiest way to release: Actions -> Release Ray Client -> Run workflow.
 
 on:
   push:
@@ -48,15 +46,33 @@ jobs:
         run: |
           mkdir -p out
           cp "build/libs/ray-client-${VER}.jar" out/
+          ls -la out
           HASH=$(sha256sum "out/ray-client-${VER}.jar" | cut -d' ' -f1)
           printf 'Ray Client %s for Minecraft 1.21.11 (Fabric).\n\nsha256: %s\n\n' "$VER" "$HASH" > notes.md
 
       - name: Publish release
+        id: rel
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VER }}
           name: Ray Client ${{ env.VER }}
           body_path: notes.md
           generate_release_notes: true
-          files: out/*.jar 
-          
+          draft: false
+          prerelease: false
+          make_latest: true
+          fail_on_unmatched_files: true
+          files: out/*.jar
+
+      - name: Show where the release is
+        run: |
+          echo "## Release published" >> "$GITHUB_STEP_SUMMARY"
+          echo "Version ${VER}: ${{ steps.rel.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "All releases: https://github.com/${GITHUB_REPOSITORY}/releases" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep a copy of the jar on the run page
+        uses: actions/upload-artifact@v4
+        with:
+          name: ray-client-${{ env.VER }}
+          path: out/*.jar
+          if-no-files-found: error
