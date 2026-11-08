@@ -1,0 +1,272 @@
+package dev.ray;
+
+import net.minecraft.client.gui.DrawContext;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Ray Client branding: a pixel-art lightning bolt, a bitmap "RAY CLIENT" wordmark and the animated dark backdrop
+ * used by the title screen and loading screen.
+ *
+ * Everything here is drawn with plain rectangles (no fonts or textures) on purpose: the loading screen is shown
+ * while Minecraft is still loading its fonts and textures, so it must not depend on either.
+ */
+public final class Brand {
+	private static final Map<Character, String[]> FONT = new HashMap<>();
+	private static final String[] BOLT = {
+		".........###..",
+		"........###...",
+		"........###...",
+		".......###....",
+		"......####....",
+		"......####....",
+		".....####.....",
+		".....####.....",
+		"....#########.",
+		"...##########.",
+		"...#########..",
+		"..#########...",
+		"......#####...",
+		"......####....",
+		"......###.....",
+		"......###.....",
+		".....###......",
+		".....##.......",
+		".....##.......",
+		".....#........",
+		"....#........."
+	};
+
+	static {
+		put('R', "####.", "#...#", "#...#", "####.", "#.#..", "#..#.", "#...#");
+		put('A', ".###.", "#...#", "#...#", "#####", "#...#", "#...#", "#...#");
+		put('Y', "#...#", "#...#", ".#.#.", "..#..", "..#..", "..#..", "..#..");
+		put('C', ".####", "#....", "#....", "#....", "#....", "#....", ".####");
+		put('L', "#....", "#....", "#....", "#....", "#....", "#....", "#####");
+		put('I', "#####", "..#..", "..#..", "..#..", "..#..", "..#..", "#####");
+		put('E', "#####", "#....", "#....", "####.", "#....", "#....", "#####");
+		put('N', "#...#", "##..#", "#.#.#", "#.#.#", "#..##", "#...#", "#...#");
+		put('T', "#####", "..#..", "..#..", "..#..", "..#..", "..#..", "..#..");
+		put('O', ".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###.");
+		put('D', "####.", "#...#", "#...#", "#...#", "#...#", "#...#", "####.");
+		put('G', ".####", "#....", "#....", "#.###", "#...#", "#...#", ".###.");
+	}
+
+	private Brand() {}
+
+	private static void put(char c, String... rows) {
+		FONT.put(c, rows);
+	}
+
+	// ---------- bitmap text ----------
+
+	public static int wordWidth(String text, int scale) {
+		int w = 0;
+		for (int i = 0; i < text.length(); i++) w += (text.charAt(i) == ' ' ? 4 : 6) * scale;
+		return Math.max(0, w - scale);
+	}
+
+	public static int wordHeight(int scale) {
+		return 7 * scale;
+	}
+
+	public static void word(DrawContext ctx, String text, int x, int y, int scale, int color) {
+		int cx = x;
+		for (int i = 0; i < text.length(); i++) {
+			char ch = text.charAt(i);
+			if (ch == ' ') {
+				cx += 4 * scale;
+				continue;
+			}
+			String[] g = FONT.get(Character.toUpperCase(ch));
+			if (g != null) {
+				for (int r = 0; r < g.length; r++) {
+					String row = g[r];
+					for (int c = 0; c < row.length(); c++) {
+						if (row.charAt(c) == '#') {
+							ctx.fill(cx + c * scale, y + r * scale, cx + (c + 1) * scale, y + (r + 1) * scale, color);
+						}
+					}
+				}
+			}
+			cx += 6 * scale;
+		}
+	}
+
+	/** Wordmark with a soft coloured glow behind it. */
+	public static void wordGlow(DrawContext ctx, String text, int x, int y, int scale, int color, int glow, float alpha) {
+		int d = Math.max(1, scale / 2 + 1);
+		int g = Theme.fade(glow, 0.16f * alpha);
+		word(ctx, text, x - d, y, scale, g);
+		word(ctx, text, x + d, y, scale, g);
+		word(ctx, text, x, y - d, scale, g);
+		word(ctx, text, x, y + d, scale, g);
+		word(ctx, text, x, y, scale, Theme.fade(color, alpha));
+	}
+
+	/** Draws "RAY" in white and "CLIENT" in the accent colour, centred on cx. Returns the total width. */
+	public static int wordmark(DrawContext ctx, int cx, int y, int scale, float alpha) {
+		int total = wordWidth("RAY CLIENT", scale);
+		int x = cx - total / 2;
+		int accent = Theme.accent();
+		wordGlow(ctx, "RAY", x, y, scale, 0xFFFFFFFF, accent, alpha);
+		int cxStart = x + wordWidth("RAY ", scale) + scale;
+		wordGlow(ctx, "CLIENT", cxStart, y, scale, accent, accent, alpha);
+		return total;
+	}
+
+	// ---------- bolt ----------
+
+	public static int boltWidth(int scale) {
+		return BOLT[0].length() * scale;
+	}
+
+	public static int boltHeight(int scale) {
+		return BOLT.length * scale;
+	}
+
+	/** Pixel-art lightning bolt with a pulsing glow. cx = horizontal centre, top = top edge. */
+	public static void bolt(DrawContext ctx, int cx, int top, int scale, float alpha, long timeMs) {
+		int x0 = cx - boltWidth(scale) / 2;
+		int accent = Theme.accent();
+		float pulse = 0.5f + 0.5f * (float) Math.sin(timeMs / 450.0);
+		int d = scale + (int) (pulse * scale);
+		int glow = Theme.fade(accent, (0.10f + 0.07f * pulse) * alpha);
+		for (int[] o : new int[][]{{-d, 0}, {d, 0}, {0, -d}, {0, d}, {-d, -d}, {d, d}, {-d, d}, {d, -d}}) {
+			drawBolt(ctx, x0 + o[0], top + o[1], scale, glow, glow);
+		}
+		drawBolt(ctx, x0, top, scale, Theme.fade(0xFFFFF4B8, alpha), Theme.fade(0xFFFFB400, alpha));
+	}
+
+	private static void drawBolt(DrawContext ctx, int x0, int top, int scale, int c1, int c2) {
+		for (int r = 0; r < BOLT.length; r++) {
+			int col = Theme.mix(c1, c2, r / (float) (BOLT.length - 1));
+			String row = BOLT[r];
+			int start = -1;
+			for (int c = 0; c <= row.length(); c++) {
+				boolean lit = c < row.length() && row.charAt(c) == '#';
+				if (lit && start < 0) start = c;
+				if (!lit && start >= 0) {
+					ctx.fill(x0 + start * scale, top + r * scale, x0 + c * scale, top + (r + 1) * scale, col);
+					start = -1;
+				}
+			}
+		}
+	}
+
+	// ---------- backdrop ----------
+
+	private static float frac(float v) {
+		return v - (float) Math.floor(v);
+	}
+
+	/**
+	 * A soft round light: stacked translucent discs, drawn as horizontal strips (cheap, no per-pixel work).
+	 * The strip height grows with the radius so a big light costs about 350 fills, not thousands.
+	 */
+	public static void orb(DrawContext ctx, int cx, int cy, int radius, int color, float alpha) {
+		final int layers = 7;
+		for (int k = 1; k <= layers; k++) {
+			int r = radius * k / layers;
+			if (r < 2) continue;
+			int col = Theme.fade(color, alpha / layers);
+			int step = Math.max(1, r / 26);
+			for (int dy = -r; dy < r; dy += step) {
+				double mid = Math.min(r, Math.abs(dy + step / 2.0));
+				int hw = (int) Math.sqrt((double) r * r - mid * mid);
+				if (hw <= 0) continue;
+				ctx.fill(cx - hw, cy + dy, cx + hw, Math.min(cy + r, cy + dy + step), col);
+			}
+		}
+	}
+
+	/** Animated dark backdrop: deep gradient, two slowly drifting coloured lights, floating sparks and a vignette. */
+	public static void backdrop(DrawContext ctx, int w, int h, long timeMs, float alpha) {
+		backdrop(ctx, w, h, timeMs, alpha, 0f, 0f);
+	}
+
+	/** Same, with the lights shifted a little by the cursor (px, py in -1..1) for a sense of depth. */
+	public static void backdrop(DrawContext ctx, int w, int h, long timeMs, float alpha, float parX, float parY) {
+		int accent = Theme.accent();
+		ctx.fillGradient(0, 0, w, h, Theme.fade(0xFF06070B, alpha), Theme.fade(0xFF0C0E15, alpha));
+
+		float t = timeMs / 1000f;
+		int base = Math.min(w, h);
+		int r1 = Math.max(60, base * 3 / 5), r2 = Math.max(50, base / 2);
+		int x1 = (int) (w * 0.28f + Math.sin(t * 0.21f) * w * 0.12f - parX * 14f), y1 = (int) (h * 0.35f + Math.cos(t * 0.17f) * h * 0.12f - parY * 10f);
+		int x2 = (int) (w * 0.74f + Math.cos(t * 0.19f) * w * 0.1f + parX * 22f), y2 = (int) (h * 0.68f + Math.sin(t * 0.23f) * h * 0.1f + parY * 16f);
+		orb(ctx, x1, y1, r1, accent, 0.17f * alpha);
+		orb(ctx, x2, y2, r2, Theme.mix(accent, 0xFF6A7BFF, 0.5f), 0.12f * alpha);
+		int x3 = (int) (w * 0.55f + Math.sin(t * 0.13f + 1.7f) * w * 0.18f), y3 = (int) (h * 0.12f + Math.cos(t * 0.11f) * h * 0.06f);
+		orb(ctx, x3, y3, Math.max(40, base * 2 / 5), Theme.mix(accent, 0xFFFFFFFF, 0.35f), 0.05f * alpha);
+
+		// floating sparks (the bigger ones leave a faint trail)
+		for (int i = 0; i < 26; i++) {
+			float sx = frac(i * 0.6180339f + 0.11f);
+			float speed = 0.010f + (i % 7) * 0.003f;
+			float sy = frac(i * 0.3819660f + 0.37f - t * speed);
+			int px = (int) (sx * w + Math.sin(t * 0.6f + i) * 6f);
+			int py = (int) (sy * h);
+			float tw = 0.5f + 0.5f * (float) Math.sin(t * 2.0f + i * 1.7f);
+			int size = (i % 6 == 0) ? 2 : 1;
+			ctx.fill(px, py, px + size, py + size, Theme.fade(0xFFFFFFFF, (0.10f + 0.35f * tw) * alpha));
+			if (size == 2) {
+				ctx.fillGradient(px, py + 2, px + 2, py + 12, Theme.fade(0xFFFFFFFF, 0.10f * tw * alpha), 0x00FFFFFF);
+			}
+		}
+
+		// vignette
+		ctx.fillGradient(0, 0, w, h / 4, Theme.fade(0xAA000000, alpha), 0x00000000);
+		ctx.fillGradient(0, h - h / 3, w, h, 0x00000000, Theme.fade(0xCC000000, alpha));
+	}
+
+	// ---------- loading screen ----------
+
+	/** Drawn on top of Minecraft's own loading overlay (see SplashOverlayMixin). alpha fades the whole thing out. */
+	public static void drawLoading(DrawContext ctx, float alpha, long timeMs) {
+		int w = ctx.getScaledWindowWidth();
+		int h = ctx.getScaledWindowHeight();
+		ctx.fill(0, 0, w, h, Theme.fade(Theme.BG_DEEP, alpha));
+		backdrop(ctx, w, h, timeMs, alpha);
+
+		int s = Math.max(2, Math.min(4, h / 90));
+		int bs = Math.max(2, s - 1);
+		int boltH = boltHeight(bs);
+		int wordH = wordHeight(s);
+		int gap1 = 8 + s * 2, gap2 = 12 + s * 2;
+		int total = boltH + gap1 + wordH + gap2 + 3 + 10 + 7;
+		int y = (h - total) / 2;
+		int cx = w / 2;
+
+		bolt(ctx, cx, y, bs, alpha, timeMs);
+		y += boltH + gap1;
+		wordmark(ctx, cx, y, s, alpha);
+		y += wordH + gap2;
+
+		// indeterminate progress bar
+		int barW = Math.min(150, w / 2);
+		int bx = cx - barW / 2;
+		int accent = Theme.accent();
+		ctx.fill(bx, y, bx + barW, y + 3, Theme.fade(0xFFFFFFFF, 0.08f * alpha));
+		float sweep = (timeMs % 1400L) / 1400f;
+		int segW = barW / 3;
+		int sx = bx - segW + (int) (sweep * (barW + segW));
+		int x1 = Math.max(bx, sx), x2 = Math.min(bx + barW, sx + segW);
+		if (x2 > x1) ctx.fill(x1, y, x2, y + 3, Theme.fade(accent, alpha));
+		y += 3 + 10;
+
+		// "LOADING" + animated dots
+		String label = "LOADING";
+		int ls = 1;
+		int lw = wordWidth(label, ls);
+		int lx = cx - (lw + 14) / 2;
+		word(ctx, label, lx, y, ls, Theme.fade(Theme.DIM, alpha));
+		int dots = (int) ((timeMs / 350L) % 4L);
+		for (int i = 0; i < 3; i++) {
+			int dx = lx + lw + 4 + i * 4;
+			int col = i < dots ? Theme.fade(accent, alpha) : Theme.fade(Theme.MUTE, alpha);
+			ctx.fill(dx, y + 6, dx + 2, y + 8, col);
+		}
+	}
+}
