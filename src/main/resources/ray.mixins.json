@@ -1,0 +1,29 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "dev.ray.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [],
+  "client": [
+    "LivingEntityMixin",
+    "HeldItemRendererMixin",
+    "GameRendererMixin",
+    "MinecraftClientMixin",
+    "SplashOverlayMixin",
+    "GameRendererFovMixin",
+    "GameRendererStretchMixin",
+    "CameraFreeLookMixin",
+    "EntityFreeLookMixin",
+    "ScreenBackgroundMixin",
+    "OverlayTextureMixin",
+    "FontManagerMixin",
+    "InGameOverlayRendererMixin",
+    "ClientWorldSkyMixin",
+    "FogColorMixin",
+    "SkyRenderingMixin",
+    "PressableWidgetMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}
