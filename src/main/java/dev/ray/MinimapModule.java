@@ -44,7 +44,7 @@ public class MinimapModule extends HudModule {
 			long now = System.currentTimeMillis();
 			if (n != cacheN) {
 				if (cache.length != n * n) cache = new int[n * n];
-				java.util.Arrays.fill(cache, 0xFF0B0D14);
+				java.util.Arrays.fill(cache, 0xFF0B0B0F);
 				cacheN = n;
 				scanning = false;
 				lastRefresh = 0L;
@@ -78,7 +78,7 @@ public class MinimapModule extends HudModule {
 			int bz = (int) Math.floor(scanPz - range + (j + 0.5) * perCell);
 			for (int i = 0; i < n; i++) {
 				int bx = (int) Math.floor(scanPx - range + (i + 0.5) * perCell);
-				int color = 0xFF0B0D14; // nothing loaded / void
+				int color = 0xFF0B0B0F; // nothing loaded / void
 				for (int y = startY; y >= endY; y--) {
 					POS.set(bx, y, bz);
 					BlockState state = mc.world.getBlockState(POS);
@@ -110,7 +110,7 @@ public class MinimapModule extends HudModule {
 		else if (s.isOf(Blocks.NETHERRACK)) base = 0x7A2E2E;
 		else if (s.isOf(Blocks.END_STONE)) base = 0xD8D8A0;
 		else if (s.isOf(Blocks.STONE)) base = 0x8A8A8A;
-		else base = 0x707684;
+		else base = 0x76767E;
 		float shade = Math.max(0.40f, Math.min(1.15f, 0.70f + rel * 0.02f));
 		int r = Math.min(255, (int) (((base >> 16) & 0xFF) * shade));
 		int g = Math.min(255, (int) (((base >> 8) & 0xFF) * shade));
@@ -137,7 +137,7 @@ public class MinimapModule extends HudModule {
 				}
 			}
 		} else {
-			ctx.fill(x, y, x + w, y + h, 0xFF0B0D14);
+			ctx.fill(x, y, x + w, y + h, 0xFF0B0B0F);
 		}
 		if (accentBar()) ctx.fill(x, y, x + w, y + 1, accentColor());
 

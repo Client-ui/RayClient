@@ -19,7 +19,7 @@ import java.util.List;
  * ESC acts like Cancel.
  */
 public final class UpdateDialog {
-	private static final int GREEN = 0xFF22B866;
+	private static final int GREEN = 0xFF4ADE9A;
 	private static final String[] ARROW_DOWN = {"...##...", "...##...", "...##...", "...##...", "########", ".######.", "..####..", "...##..."};
 	private static final String[] CHECK = {"........#", ".......##", "#.....##.", "##...##..", ".##.##...", "..###....", "...#....."};
 	private static final String[] WARN = {"...##...", "...##...", "...##...", "...##...", "...##...", "........", "...##...", "...##..."};
@@ -147,17 +147,15 @@ public final class UpdateDialog {
 		ui.ctx.getMatrices().scale(s, s);
 		ui.ctx.getMatrices().translate(-vw / 2.0f, -vh / 2.0f);
 
-		ui.shadow(px, py, pw, ph, 12);
-		ui.panelGrad(px, py, pw, ph, 12, Theme.fade(0xFF15181E, fade), Theme.fade(0xFF0E1014, fade),
-			Theme.fade(ready ? Theme.mix(Theme.STROKE, GREEN, 0.7f) : error ? Theme.mix(Theme.STROKE, Theme.BAD, 0.7f) : Theme.mix(Theme.STROKE, accent, 0.5f), fade));
-		ui.rect(px + 14, py + 1, pw - 28, 1, Theme.fade(0xFFFFFFFF, 0.10f * fade));
+		ui.shadow(px, py, pw, ph, 14);
+		ui.glassPanel(px, py, pw, ph, 14, Theme.fade(0xFF26262F, 0.97f * fade), Theme.fade(0xFF0C0C11, 0.97f * fade), 0.36f * fade, 0.09f * fade);
 
 		// icon badge
 		int cx = px + 30, cy = py + 32;
 		int tone = ready ? GREEN : error ? Theme.BAD : accent;
 		float pulse = 0.5f + 0.5f * (float) Math.sin(now / 380.0);
 		ui.circle(cx, cy, 19, Theme.fade(tone, (0.10f + 0.07f * pulse) * fade));
-		ui.circle(cx, cy, 15, Theme.fade(Theme.mix(0xFF14171D, tone, 0.22f), fade));
+		ui.circle(cx, cy, 15, Theme.fade(Theme.mix(0xFF101015, tone, 0.22f), fade));
 		ui.ring(cx - 15, cy - 15, 30, 30, 15, Theme.fade(tone, 0.8f * fade));
 		if (ready) {
 			float ck = Theme.easeOutBack(Theme.clamp01((now - openedAt) / 500.0f));
@@ -173,7 +171,7 @@ public final class UpdateDialog {
 		// title + subtitle
 		int tx = px + 58, tw = pw - 58 - 16;
 		String title = closing ? "Closing Minecraft..." : ready ? "Restart required" : error ? "Update failed" : st == Updater.State.CHECKING ? "Checking for updates" : "Updating Ray Client";
-		ui.scaledText(title, tx, py + 17, 1.2f, Theme.fade(0xFFFFFFFF, fade), true);
+		ui.scaledHead(title, tx, py + 17, 1.2f, Theme.fade(0xFFFFFFFF, fade));
 		String sub;
 		if (closing) sub = "The update installs as the game exits. Start Minecraft again afterwards.";
 		else if (ready) sub = "Ray Client " + Updater.latest + " is installed. Minecraft needs to restart to apply the changes.";
@@ -190,7 +188,7 @@ public final class UpdateDialog {
 			// version change pill
 			String change = "v" + Updater.currentVersion() + "  >  v" + Updater.latest;
 			int cw = ui.w(change) + 18;
-			ui.rrect(px + 16, bodyY, cw, 16, 8, Theme.fade(Theme.mix(0xFF14171D, GREEN, 0.18f), fade));
+			ui.rrect(px + 16, bodyY, cw, 16, 8, Theme.fade(Theme.fade(GREEN, 0.16f), fade));
 			ui.ring(px + 16, bodyY, cw, 16, 8, Theme.fade(GREEN, 0.55f * fade));
 			ui.text(change, px + 25, bodyY + 4, Theme.fade(0xFFFFFFFF, fade));
 			bodyY += 22;
@@ -220,13 +218,13 @@ public final class UpdateDialog {
 			// nothing to press: the game is on its way out
 		} else if (ready) {
 			ui.text("Cancel keeps the update: it installs next time you close the game.", px + 16, by - 14, Theme.fade(Theme.MUTE, fade));
-			ui.pill(px + 16, by, bw, 24, "CANCEL", 0xFF8A93A8, true, UpdateDialog::cancel);
-			primary(ui, px + 16 + bw + gap, by, bw, 24, "CLOSE MINECRAFT", GREEN, fade, UpdateDialog::closeMinecraft);
+			ui.pill(px + 16, by, bw, 24, "Cancel", 0xFFB8B8C8, true, UpdateDialog::cancel);
+			primary(ui, px + 16 + bw + gap, by, bw, 24, "Close Minecraft", GREEN, fade, UpdateDialog::closeMinecraft);
 		} else if (error) {
-			ui.pill(px + 16, by, bw, 24, "CLOSE", 0xFF8A93A8, true, UpdateDialog::close);
-			primary(ui, px + 16 + bw + gap, by, bw, 24, "RETRY", accent, fade, UpdateDialog::retry);
+			ui.pill(px + 16, by, bw, 24, "Close", 0xFFB8B8C8, true, UpdateDialog::close);
+			primary(ui, px + 16 + bw + gap, by, bw, 24, "Retry", accent, fade, UpdateDialog::retry);
 		} else {
-			ui.pill(px + 16, by, pw - 32, 24, "CANCEL", 0xFFE0384A, true, UpdateDialog::cancel);
+			ui.pill(px + 16, by, pw - 32, 24, "Cancel", Theme.BAD, true, UpdateDialog::cancel);
 		}
 
 		ui.ctx.getMatrices().popMatrix();
@@ -242,10 +240,10 @@ public final class UpdateDialog {
 		float p = ui.anim("upd-prip" + label, ui.held(x, y, w, h));
 		int yy = y + Math.round(p);
 		float pulse = 0.5f + 0.5f * (float) Math.sin(System.currentTimeMillis() / 420.0);
-		ui.glow(x, yy, w, h, 6, color, (0.55f + 0.45f * pulse) * fade);
-		ui.rrectGrad(x, yy, w, h, 6, Theme.fade(Theme.mix(color, 0xFFFFFFFF, 0.18f + 0.12f * a), fade), Theme.fade(Theme.mix(color, 0xFF000000, 0.18f - 0.10f * a), fade));
-		ui.ring(x, yy, w, h, 6, Theme.fade(Theme.mix(color, 0xFFFFFFFF, 0.45f), 0.8f * fade));
-		ui.spacedCenter(label, x + w / 2, yy + (h - 8) / 2, Theme.fade(0xFFFFFFFF, fade), 1);
+		ui.glow(x, yy, w, h, 10, color, (0.55f + 0.45f * pulse) * fade);
+		ui.rrectGrad(x, yy, w, h, 10, Theme.fade(Theme.mix(color, 0xFFFFFFFF, 0.14f + 0.12f * a), fade), Theme.fade(Theme.mix(color, 0xFF000000, 0.16f - 0.08f * a), fade));
+		ui.rimGlass(x, yy, w, h, 10, 0.5f * fade, 0.12f * fade);
+		ui.center(label, x + w / 2, yy + (h - 8) / 2, Theme.fade(0xFF101014, fade));
 		ui.click("upd-pri" + label, x, y, w, h, action);
 	}
 }

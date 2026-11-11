@@ -134,7 +134,7 @@ public class RayConfig {
 	public int hitboxOpacity = 100;
 	/** vanilla's red eye-height line (off by default). */
 	public boolean hitboxEye = false;
-	/** vanilla's blue look-direction line (off by default). */
+	/** the look-direction line (off by default). */
 	public boolean hitboxLook = false;
 	/** 0 = players, 1 = all living entities. */
 	public int hitboxTarget = 0;
@@ -172,7 +172,7 @@ public class RayConfig {
 	public int skyStrength = 100;
 	/** When on, the chosen sky still gets darker at night. */
 	public boolean skyFollowDay = false;
-	public int skyCustomTop = 0x6A4CFF, skyCustomHorizon = 0xFF7AC8, skyCustomCloud = 0xFFFFFF;
+	public int skyCustomTop = 0x2A1410, skyCustomHorizon = 0xFF8A3D, skyCustomCloud = 0xFFE6CC;
 	// Lyric Sync: Spotify lyrics in the top middle of the screen and as floating words in the world
 	public boolean lyricsOn = false;
 	public boolean lyricsBar = true;
@@ -244,7 +244,7 @@ public class RayConfig {
 	/** Smooth hover / toggle / window animations. */
 	public boolean uiAnimations = true;
 	/** How see-through the menu windows are (percent opaque). Lower shows more of the blurred game behind. */
-	public int uiGlass = 90;
+	public int uiGlass = 80;
 	public boolean uiShadows = true;
 	public boolean toastsOn = true;
 	/** Module list as rows instead of cards. */
@@ -253,11 +253,11 @@ public class RayConfig {
 	public int sortMode = 0;
 	// fonts: index into FontOverride.NAMES (0 = Minecraft default, 1-5 built in, 6 = your own)
 	/** Replaces Minecraft's own font everywhere (chat, menus, tooltips...). Never touches the client's text. */
-	public boolean minecraftFontOn = false;
-	public int minecraftFont = 2;
+	public boolean minecraftFontOn = true;
+	public int minecraftFont = 1;
 	/** Font for all of the client's own text (Ray menus and HUD modules). */
 	public boolean clientFontOn = true;
-	public int clientFont = 2;
+	public int clientFont = 1;
 	public String customFontFile = "";
 	/** Ray background on the singleplayer / multiplayer / options screens (when not in a world). */
 	public boolean customBackground = true;
@@ -275,6 +275,8 @@ public class RayConfig {
 	public boolean textShadow = true;
 	/** Draws every HUD text with a dark outline (reads on any background). */
 	public boolean hudOutline = true;
+	/** Look version: older configs are moved to the new look (Ember accent, Inter font everywhere) once. */
+	public int uiSchema = 0;
 	// Data
 	public List<Waypoint> waypoints = new ArrayList<>();
 
@@ -353,6 +355,20 @@ public class RayConfig {
 
 	/** Forces every setting into its valid range, so a hand-edited or damaged file can never crash the menu. */
 	public void sanitize() {
+		if (uiSchema < 3) { // the big redesign: new default look for everyone, once (they can change it back)
+			accent = 0;
+			rainbow = false;
+			minecraftFontOn = true;
+			minecraftFont = 1;
+			clientFont = 1;
+			uiGlass = 80;
+			if (skyCustomTop == 0x6A4CFF && skyCustomHorizon == 0xFF7AC8) { // the old violet/pink default becomes ember
+				skyCustomTop = 0x2A1410;
+				skyCustomHorizon = 0xFF8A3D;
+				skyCustomCloud = 0xFFE6CC;
+			}
+			uiSchema = 3;
+		}
 		accent = clamp(accent, 0, Theme.COLORS.length - 1);
 		hudOpacity = clamp(hudOpacity, 0, 100);
 		uiGlass = clamp(uiGlass, 40, 100);
@@ -457,6 +473,7 @@ public class RayConfig {
 			loaded.totalSeconds = old.totalSeconds;
 			loaded.favorites = old.favorites;
 			loaded.lastDeath = old.lastDeath;
+			loaded.uiSchema = 3;
 			if (loaded.modules == null) loaded.modules = new HashMap<>();
 			if (loaded.positions == null) loaded.positions = new HashMap<>();
 			if (loaded.styles == null) loaded.styles = new HashMap<>();

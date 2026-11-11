@@ -485,8 +485,8 @@ public final class Features {
 				ui.colorPicker(f, "hb_hover", c.hitboxHoverColor, v -> c.hitboxHoverColor = v);
 				f.section("Vanilla extras");
 				ui.toggle(f.half(), "Eye Line (red)", c.hitboxEye, () -> c.hitboxEye = !c.hitboxEye);
-				ui.toggle(f.half(), "Look Line (blue)", c.hitboxLook, () -> c.hitboxLook = !c.hitboxLook);
-				f.note("Unlike vanilla's F3+B boxes, the red eye-height line and the blue look-direction line are optional and off by default. Only players you can actually see are boxed: never through walls, and never invisible ones.");
+				ui.toggle(f.half(), "Look Line", c.hitboxLook, () -> c.hitboxLook = !c.hitboxLook);
+				f.note("Unlike vanilla's F3+B boxes, the red eye-height line and the look-direction line are optional and off by default. Only players you can actually see are boxed: never through walls, and never invisible ones.");
 			}));
 
 		out.add(feature("f_mcfont", "Minecraft Font", "Visual", "font text typeface chat game vanilla custom ttf otf",
@@ -663,7 +663,7 @@ public final class Features {
 		f.section("Preview");
 		int pvH = 84;
 		int pvTop = f.reserve(pvH);
-		ui.rrectGrad(f.x(), pvTop, f.width(), pvH, 8, 0xFF1B2540, 0xFF0B1224);
+		ui.rrectGrad(f.x(), pvTop, f.width(), pvH, 10, 0xFF1C1612, 0xFF0B0A09);
 		ui.ring(f.x(), pvTop, f.width(), pvH, 8, Theme.STROKE);
 		LyricsHud.drawPreview(ui.ctx, net.minecraft.client.MinecraftClient.getInstance().textRenderer, ui, f.x() + f.width() / 2, pvTop + 8, f.width());
 

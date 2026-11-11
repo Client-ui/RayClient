@@ -543,7 +543,7 @@ public final class LyricsHud {
 			// a faint glow in the accent colour that breathes with the music while it plays
 			float breathe = b.playing ? 0.55f + 0.45f * (float) Math.sin(System.currentTimeMillis() / 520.0) : 0.25f;
 			UI.glow(bx, by, bw, pillH, 11, accent, breathe * A);
-			UI.panelGrad(bx, by, bw, pillH, 11, Theme.fade(0xFF151821, 0.94f * A), Theme.fade(0xFF0C0E13, 0.94f * A), Theme.fade(Theme.mix(Theme.STROKE, accent, 0.40f), A));
+			UI.panelGrad(bx, by, bw, pillH, 11, Theme.fade(0xFF17171C, 0.94f * A), Theme.fade(0xFF0D0D11, 0.94f * A), Theme.fade(Theme.mix(Theme.STROKE, accent, 0.40f), A));
 			UI.accentLine(bx + 12, by, bw - 24, Theme.fade(accent, A));
 			// play / pause tile
 			UI.rrect(bx + 4, by + 4, 16, 16, 6, Theme.fade(accent, A));

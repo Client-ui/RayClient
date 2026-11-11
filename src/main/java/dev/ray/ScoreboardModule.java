@@ -33,7 +33,7 @@ public class ScoreboardModule extends HudModule {
 			ctx.fill(x + 4, y + 18 + i * 11, x + w - 4 - (i % 3) * 14, y + 26 + i * 11, 0x33FFFFFF);
 		}
 		String s = "Scale " + cfg.scoreboardScale + "%";
-		ClientFont.draw(ctx, tr, s, x + w - 4 - ClientFont.width(tr, s), y + h - 10, 0xFFB0BCD6, false);
+		ClientFont.draw(ctx, tr, s, x + w - 4 - ClientFont.width(tr, s), y + h - 10, 0xFFC4C4CE, false);
 	}
 
 	@Override

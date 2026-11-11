@@ -9,14 +9,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Draws Minecraft's own buttons in the Ray style: glass surface, accent border on hover, the client font. It is used on
+ * Draws Minecraft's own buttons in the Ray style: frosted glass, accent glow on hover, the client font. It is used on
  * the menus outside a world and on the pause (Esc) menu; every other in-game screen stays vanilla. The "Ray Client"
- * button of the pause menu gets a lit accent look with a bolt.
+ * button of the pause menu gets a lit accent look with the logo.
  */
 public final class MenuButtons {
 	private static final Ui UI = new Ui();
 	private static final Map<Integer, String> IDS = new HashMap<>();
-	private static final String[] BOLT = {"..##", ".##.", "###.", ".###", "..#."};
 
 	private MenuButtons() {}
 
@@ -34,24 +33,19 @@ public final class MenuButtons {
 		boolean hero = pause && text.startsWith("Ray Client");
 		float hv = UI.anim(id, hovered && active);
 		float fv = UI.anim(id + "f", focused && active);
-		int r = Math.min(h / 2, 6);
+		int r = Math.min(h / 2, 9);
 		if (hero) {
-			UI.glow(x, y, w, h, r, accent, 0.5f + 0.5f * hv);
-			UI.rrectGrad(x, y, w, h, r, Theme.mix(accent, 0xFFFFFFFF, 0.10f + 0.12f * hv), Theme.mix(accent, 0xFF000000, 0.42f - 0.14f * hv));
-			UI.ring(x, y, w, h, r, Theme.fade(Theme.mix(accent, 0xFFFFFFFF, 0.5f), 0.8f));
-			ctx.fill(x + r, y + 1, x + w - r, y + 2, 0x44FFFFFF);
-			UI.pix(BOLT, x + 10, y + (h - 10) / 2, 2, 0xFFFFFFFF);
-			UI.spacedCenter("RAY CLIENT", x + w / 2, y + (h - 8) / 2 + 1, 0xFFFFFFFF, 2);
-			UI.right("HUD & MODS", x + w - 10, y + (h - 8) / 2 + 1, 0xCCFFFFFF);
+			UI.accentFill(x, y, w, h, r, hv);
+			int lh = Math.max(12, h - 10);
+			Logo.draw(ctx, x + 10, y + (h - lh) / 2, lh, 1f);
+			UI.headCenter("Ray Client", x + w / 2, y + (h - 8) / 2 + 1, Ui.onAccent());
+			UI.right("HUD & Mods", x + w - 10, y + (h - 8) / 2 + 1, Theme.fade(Ui.onAccent(), 0.75f));
 			return true;
 		}
-		if (active && hv > 0.02f) UI.glow(x, y, w, h, r, accent, hv * 0.7f);
-		int top = active ? Theme.mix(0xFF1C2027, Theme.mix(0xFF1C2027, accent, 0.36f), hv) : 0xFF101217;
-		int bot = active ? Theme.mix(0xFF13161B, Theme.mix(0xFF13161B, accent, 0.24f), hv) : 0xFF0E1014;
-		UI.rrectGrad(x, y, w, h, r, top, bot);
-		if (active) ctx.fill(x + r, y + 1, x + w - r, y + 2, Theme.fade(0xFFFFFFFF, 0.05f + 0.07f * hv));
-		UI.ring(x, y, w, h, r, active ? Theme.mix(Theme.mix(Theme.STROKE, accent, fv * 0.8f), accent, hv * 0.9f) : 0xFF1B1F26);
-		UI.center(text, x + w / 2, y + (h - 8) / 2 + 1, active ? Theme.mix(0xFFD9DEEA, 0xFFFFFFFF, hv) : 0xFF5C657D);
+		UI.rrect(x, y, w, h, r, active ? Ui.white(0.08f + 0.07f * hv) : Ui.white(0.035f));
+		if (active && hv > 0.05f) UI.ring(x, y, w, h, r, Ui.white(0.18f * hv));
+		if (active && fv > 0.02f) UI.ring(x, y, w, h, r, Theme.fade(accent, 0.8f * fv));
+		UI.center(text, x + w / 2, y + (h - 8) / 2 + 1, active ? Theme.mix(0xFFE0E0EA, 0xFFFFFFFF, hv) : Theme.MUTE);
 		return true;
 	}
 }

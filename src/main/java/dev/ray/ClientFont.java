@@ -41,7 +41,7 @@ public final class ClientFont {
 		}
 	}
 
-	private static final Face CLIENT = new Face(), SMOOTH = new Face();
+	private static final Face CLIENT = new Face(), SMOOTH = new Face(), HEAD = new Face();
 	/** Set if Minecraft could not build a styled text once: stop trying and draw normally. */
 	private static boolean broken = false;
 
@@ -94,16 +94,30 @@ public final class ClientFont {
 		return widthOn(CLIENT, FontOverride.clientFontId(), tr, s);
 	}
 
-	/** Text with a 1px dark outline all around it (the outline keeps the alpha of the text colour). */
+	/** Text with a 1px dark outline on four sides (the outline keeps the alpha of the text colour). */
 	public static void drawOutlined(DrawContext ctx, TextRenderer tr, String s, int x, int y, int color) {
-		int oc = ((color >>> 24) << 24) | 0x000000;
-		oc = (int) ((((long) (oc >>> 24)) * 0xD0 / 0xFF) << 24);
-		for (int dx = -1; dx <= 1; dx++) {
-			for (int dy = -1; dy <= 1; dy++) {
-				if (dx != 0 || dy != 0) draw(ctx, tr, s, x + dx, y + dy, oc, false);
-			}
-		}
+		int oc = (int) ((((long) (color >>> 24)) * 0xD0 / 0xFF) << 24);
+		draw(ctx, tr, s, x - 1, y, oc, false);
+		draw(ctx, tr, s, x + 1, y, oc, false);
+		draw(ctx, tr, s, x, y - 1, oc, false);
+		draw(ctx, tr, s, x, y + 1, oc, false);
 		draw(ctx, tr, s, x, y, color, false);
+	}
+
+	// ---- the bold heading face ----
+
+	public static void drawHead(DrawContext ctx, TextRenderer tr, String s, int x, int y, int color, boolean shadow) {
+		Identifier id = FontOverride.headId();
+		if (id == null) {
+			draw(ctx, tr, s, x, y, color, shadow);
+			return;
+		}
+		drawOn(HEAD, id, ctx, tr, s, x, y, color, shadow);
+	}
+
+	public static int widthHead(TextRenderer tr, String s) {
+		Identifier id = FontOverride.headId();
+		return id == null ? width(tr, s) : widthOn(HEAD, id, tr, s);
 	}
 
 	// ---- always the smooth font (Lyric Sync) ----

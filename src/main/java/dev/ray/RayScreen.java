@@ -25,6 +25,14 @@ import java.util.Set;
  * right at any window size and GUI Scale.
  */
 public class RayScreen extends Screen {
+	/** MODS -> Mods, PVP -> PvP, HUD stays HUD: the ids stay upper-case, what people read does not. */
+	static String nice(String id) {
+		if (id.equals("HUD")) return "HUD";
+		if (id.equals("PVP")) return "PvP";
+		if (id.equals("A-Z")) return "A to Z";
+		return id.charAt(0) + id.substring(1).toLowerCase();
+	}
+
 	private static final String[] PAGES = {"MODS", "SETTINGS", "PROFILES", "WAYPOINTS"};
 	private static final String[] CHIPS = {"ALL", "NEW", "HUD", "PVP", "VISUAL", "MECHANIC", "EXTRAS", "ON", "FAV"};
 	private static final String[] SORTS = {"CATEGORY", "A-Z", "ENABLED", "FAVORITES"};
@@ -32,7 +40,7 @@ public class RayScreen extends Screen {
 	private static final Set<String> NEW_IDS = Set.of("f_crosshair", "f_sky", "f_lyrics", "f_hitbox", "f_sideshield", "minimap");
 
 	private static final int DESIGN_W = 760, DESIGN_H = 450;
-	private static final int HEADER_H = 44, SIDE_W = 160, TILE_H = 46, GAP = 8;
+	private static final int HEADER_H = 44, SIDE_W = 160, TILE_H = 50, GAP = 10;
 
 	private static int page = 0;
 	private static String filter = "ALL";
@@ -160,8 +168,6 @@ public class RayScreen extends Screen {
 		float t = cfg.uiAnimations ? Math.min(1f, (now - openedAt) / 260f) : 1f;
 		float open = Theme.easeOutCubic(t);
 		if (client.world != null) ctx.fill(0, 0, width, height, Theme.fade(0xFF000000, 0.44f * open));
-		// a wide soft light in the accent colour sits behind the menu, so the glass surfaces have something to catch
-		Brand.orb(ctx, width / 2, height / 2, Math.max(120, Math.min(width, height) * 3 / 5), Theme.accent(), 0.11f * open);
 
 		// the menu is laid out in a virtual screen and scaled so it always fits the window
 		float sc = UiScale.fit(width, height, DESIGN_W, DESIGN_H, cfg.menuScale);
@@ -210,25 +216,27 @@ public class RayScreen extends Screen {
 	}
 
 	private void drawHeader(int px, int py, int pw) {
-		long now = System.currentTimeMillis();
 		int accent = Theme.accent();
-		// logo lock-up
-		Brand.bolt(ui.ctx, px + 20, py + 11, 1, 1.0f, now);
-		Brand.word(ui.ctx, "RAY", px + 38, py + 9, 2, 0xFFFFFFFF);
-		Brand.word(ui.ctx, "CLIENT", px + 38, py + 26, 1, accent);
+		// logo lock-up: the orbiting R, then "Ray" in white and "Client" in the accent
+		int lh = 28;
+		Logo.draw(ui.ctx, px + 16, py + (HEADER_H - lh) / 2, lh, 1f);
+		int lx = px + 16 + Logo.width(lh) + 9, ly = py + (HEADER_H - 10) / 2;
+		int rw = Math.round(ui.headWidth("Ray") * 1.25f);
+		ui.scaledHead("Ray", lx, ly, 1.25f, Theme.TEXT);
+		ui.scaledHead("Client", lx + rw + 4, ly, 1.25f, Theme.DIM);
 
-		// page tabs: a segmented control with a highlight that glides to the selected tab
-		int sp = 2, padX = 15, th = 28, ty = py + (HEADER_H - th) / 2;
+		// page tabs: a glass capsule with a highlight that glides to the selected tab
+		int padX = 14, th = 26, ty = py + (HEADER_H - th) / 2;
 		int total = 0;
 		int[] widths = new int[PAGES.length];
 		for (int i = 0; i < PAGES.length; i++) {
-			widths[i] = ui.spacedWidth(PAGES[i], sp) + padX * 2;
+			widths[i] = ui.w(nice(PAGES[i])) + padX * 2;
 			total += widths[i];
 		}
 		int trackW = total + 8;
-		int trackX = Math.max(px + 120, px + (pw - trackW) / 2);
-		ui.rrect(trackX, ty, trackW, th, 7, 0xFF0C0E12);
-		ui.ring(trackX, ty, trackW, th, 7, 0xFF22262E);
+		int trackX = Math.max(px + 176, px + (pw - trackW) / 2);
+		ui.rrect(trackX, ty, trackW, th, th / 2, Ui.white(0.045f));
+		ui.ring(trackX, ty, trackW, th, th / 2, Ui.white(0.10f));
 		int x = trackX + 4;
 		int selX = x, selW = widths[0];
 		for (int i = 0; i < PAGES.length; i++) {
@@ -240,15 +248,13 @@ public class RayScreen extends Screen {
 		}
 		float gx = ui.animTo("tabx", selX), gw = ui.animTo("tabw", selW);
 		int ix = Math.round(gx), iw = Math.round(gw);
-		ui.glow(ix, ty + 3, iw, th - 6, 5, accent, 0.5f);
-		ui.rrectGrad(ix, ty + 3, iw, th - 6, 5, Theme.mix(0xFF2D323D, accent, 0.30f), Theme.mix(0xFF1E222A, accent, 0.16f));
-		ui.ring(ix, ty + 3, iw, th - 6, 5, Theme.fade(Theme.mix(accent, 0xFFFFFFFF, 0.2f), 0.85f));
+		ui.rrect(ix, ty + 3, iw, th - 6, (th - 6) / 2, Ui.white(0.14f));
 		x = trackX + 4;
 		for (int i = 0; i < PAGES.length; i++) {
 			final int idx = i;
 			float hv = ui.anim("pgh" + i, ui.over(x, ty, widths[i], th));
 			float sv = ui.anim("pgs" + i, page == i);
-			ui.spaced(PAGES[i], x + padX, ty + 10, Theme.mix(Theme.mix(Theme.MUTE, Theme.DIM, hv), 0xFFFFFFFF, sv), sp);
+			ui.text(nice(PAGES[i]), x + padX, ty + 9, Theme.mix(Theme.mix(Theme.MUTE, Theme.DIM, hv), 0xFFFFFFFF, sv));
 			ui.click("page" + i, x, ty, widths[i], th, () -> setPage(idx));
 			x += widths[i];
 		}
@@ -256,12 +262,12 @@ public class RayScreen extends Screen {
 		// version + close
 		ui.right("v" + RayClient.VERSION, px + pw - 52, py + (HEADER_H - 8) / 2, Theme.MUTE);
 		int cx = px + pw - 40, cy = py + (HEADER_H - 26) / 2;
-		boolean chov = ui.over(cx, cy, 28, 26);
+		boolean chov = ui.over(cx, cy, 26, 26);
 		float cv = ui.anim("closebtn", chov);
-		ui.rrectGrad(cx, cy, 28, 26, 6, Theme.mix(0xFF241A1D, 0xFFC4303B, cv), Theme.mix(0xFF1A1315, 0xFF9E232D, cv));
-		ui.ring(cx, cy, 28, 26, 6, Theme.mix(0xFF5A2A31, 0xFFFF7A86, cv));
-		ui.closeIcon(cx + 10, cy + 9, Theme.mix(0xFFFF9AA2, 0xFFFFFFFF, cv));
-		ui.click("close", cx, cy, 28, 26, this::close);
+		ui.rrect(cx, cy, 26, 26, 13, Theme.mix(Ui.white(0.06f), Theme.fade(Theme.BAD, 0.55f), cv));
+		ui.rimGlass(cx, cy, 26, 26, 13, 0.22f + 0.2f * cv, 0.06f);
+		ui.closeIcon(cx + 9, cy + 9, Theme.mix(Theme.DIM, 0xFFFFFFFF, cv));
+		ui.click("close", cx, cy, 26, 26, this::close);
 	}
 
 	// ---------- MODS page ----------
@@ -292,26 +298,23 @@ public class RayScreen extends Screen {
 	}
 
 	private int chipColor(String chip) {
-		return switch (chip) {
-			case "ALL" -> Theme.accent();
-			case "NEW", "ON" -> Theme.TILE_ON;
-			case "FAV" -> 0xFFFF6A86;
-			default -> 0xFF5C86C8;
-		};
+		return chip.equals("FAV") ? 0xFFFF7A9A : Theme.accent();
 	}
 
 	private int filterChip(int x, int y, String label) {
 		boolean active = filter.equals(label);
-		int base = chipColor(label);
-		int w = ui.spacedWidth(label, 1) + 18, h = 20;
+		int w = ui.w(nice(label)) + 14, h = 20, cr = 8;
 		float hv = ui.anim("fc" + label, ui.over(x, y, w, h));
 		float on = ui.anim("fcon" + label, active);
-		int top = Theme.mix(Theme.mix(0xFF1A1D24, base, 0.16f + 0.10f * hv), Theme.mix(base, 0xFFFFFFFF, 0.10f), on * 0.85f);
-		int bot = Theme.mix(Theme.mix(0xFF14171D, base, 0.10f + 0.08f * hv), Theme.mix(base, 0xFF000000, 0.25f), on * 0.85f);
-		if (on > 0.05f) ui.glow(x, y, w, h, 6, base, on * 0.6f);
-		ui.rrectGrad(x, y, w, h, 5, top, bot);
-		ui.ring(x, y, w, h, 5, Theme.mix(Theme.mix(Theme.STROKE, base, 0.50f + 0.20f * hv), Theme.mix(base, 0xFFFFFFFF, 0.30f), on));
-		ui.spaced(label, x + 9, y + 6, Theme.mix(Theme.mix(Theme.DIM, 0xFFFFFFFF, hv), 0xFFFFFFFF, on), 1);
+		if (on > 0.05f) ui.glow(x, y, w, h, cr, Theme.accent(), on * 0.5f);
+		if (on < 0.98f) {
+			ui.rrect(x, y, w, h, cr, Ui.white((0.07f + 0.05f * hv) * (1f - on)));
+			if (hv > 0.05f) ui.ring(x, y, w, h, cr, Ui.white(0.16f * hv * (1f - on)));
+		}
+		if (on > 0.02f) {
+			ui.rrect(x, y, w, h, cr, Theme.fade(Theme.accent(), on));
+		}
+		ui.text(nice(label), x + 7, y + 6, Theme.mix(Theme.mix(Theme.DIM, 0xFFFFFFFF, hv), Ui.onAccent(), on));
 		ui.click("fchip" + label, x, y, w, h, () -> setFilter(label));
 		return w;
 	}
@@ -326,15 +329,15 @@ public class RayScreen extends Screen {
 		int bodyY = top + 14, innerH = bodyH - 28;
 
 		// search pill (right), view switch, then the chips (wrapping)
-		sw = Math.min(150, innerW / 4);
+		sw = Math.min(116, innerW / 5);
 		sh = 22;
 		sx = left + innerW - sw;
 		sy = bodyY;
 		float focus = ui.anim("searchfocus", search.isFocused());
 		float shv = ui.anim("searchhov", ui.over(sx, sy, sw, sh));
-		if (focus > 0.05f) ui.glow(sx, sy, sw, sh, 11, Theme.accent(), focus * 0.7f);
-		ui.rrect(sx, sy, sw, sh, 8, Theme.mix(0xFF0C0E12, 0xFF11141A, focus));
-		ui.ring(sx, sy, sw, sh, 8, Theme.mix(Theme.mix(Theme.STROKE, Theme.STROKE_HI, shv), Theme.accent(), focus));
+		if (focus > 0.05f) ui.glow(sx, sy, sw, sh, sh / 2, Theme.accent(), focus * 0.7f);
+		ui.rrect(sx, sy, sw, sh, sh / 2, Ui.white(0.045f + 0.03f * Math.max(focus, shv)));
+		ui.ring(sx, sy, sw, sh, sh / 2, Theme.mix(Ui.white(0.10f + 0.08f * shv), Theme.fade(Theme.accent(), 0.9f), focus));
 		ui.searchIcon(sx + 9, sy + 7, Theme.mix(Theme.MUTE, Theme.DIM, Math.max(focus, shv)));
 		search.setX(sx + 24);
 		search.setY(sy + 7);
@@ -343,8 +346,8 @@ public class RayScreen extends Screen {
 
 		int vx = sx - 8 - 28;
 		float vv = ui.anim("viewsw", ui.over(vx, sy, 28, sh));
-		ui.rrectGrad(vx, sy, 28, sh, 6, Theme.mix(0xFF1A1D24, 0xFF252A33, vv), Theme.mix(0xFF14171D, 0xFF1D2128, vv));
-		ui.ring(vx, sy, 28, sh, 6, Theme.mix(Theme.STROKE, Theme.accent(), vv * 0.6f));
+		ui.rrect(vx, sy, 28, sh, sh / 2, Ui.white(0.05f + 0.05f * vv));
+		ui.ring(vx, sy, 28, sh, sh / 2, Theme.mix(Ui.white(0.11f), Theme.fade(Theme.accent(), 0.7f), vv * 0.7f));
 		if (cfg.listView) ui.listIcon(vx + 9, sy + 8, Theme.mix(Theme.DIM, 0xFFFFFFFF, vv));
 		else ui.dotsIcon(vx + 10, sy + 7, Theme.mix(Theme.DIM, 0xFFFFFFFF, vv));
 		ui.click("viewsw", vx, sy, 28, sh, () -> {
@@ -356,13 +359,13 @@ public class RayScreen extends Screen {
 		int chipAreaW = vx - 10 - left;
 		int cx = left, cy = bodyY + 1, rows = 1;
 		for (String chip : CHIPS) {
-			int cw = ui.spacedWidth(chip, 1) + 18;
+			int cw = ui.w(nice(chip)) + 14;
 			if (cx + cw > left + chipAreaW && cx > left) {
 				cx = left;
-				cy += 26;
+				cy += 24;
 				rows++;
 			}
-			cx += filterChip(cx, cy, chip) + 6;
+			cx += filterChip(cx, cy, chip) + 4;
 		}
 
 		// filter, then sort (cached: rebuilt only when something changed, not every frame)
@@ -395,16 +398,16 @@ public class RayScreen extends Screen {
 
 		// layout: tiles in a grid, or compact rows
 		boolean list = cfg.listView;
-		int gy = bodyY + rows * 26 + 6;
-		int footH = 22;
+		int gy = bodyY + rows * 24 + 10;
+		int footH = 28;
 		int gh = bodyY + innerH - footH - gy;
 		int gw = innerW - 8;
 		int cols = list ? 1 : cfg.menuCols > 0 ? cfg.menuCols : Math.max(2, Math.min(5, (gw + GAP) / (170 + GAP)));
-		int itemH = list ? 32 : TILE_H;
-		int gap = list ? 5 : GAP;
+		int itemH = list ? 34 : TILE_H;
+		int gap = list ? 6 : GAP;
 		int cardWd = (gw - (cols - 1) * gap) / cols;
 		int gridRows = (shown.size() + cols - 1) / cols;
-		int contentH = Math.max(0, gridRows * (itemH + gap) - gap) + 8;
+		int contentH = Math.max(0, gridRows * (itemH + gap) - gap) + 14;
 		scrollMax = Math.max(0, contentH - gh);
 		scrollTarget = Math.max(0, Math.min(scrollMax, scrollTarget));
 		off = Math.max(0, Math.min(scrollMax, off));
@@ -412,13 +415,13 @@ public class RayScreen extends Screen {
 		ui.pushClip(left - 4, gy, gw + 8, gh);
 		for (int i = 0; i < shown.size(); i++) {
 			int x = left + (i % cols) * (cardWd + gap);
-			int y = gy + 4 + (i / cols) * (itemH + gap) - off;
+			int y = gy + 6 + (i / cols) * (itemH + gap) - off;
 			if (y + itemH < gy || y > gy + gh) continue;
 			if (list) drawRow(shown.get(i), x, y, cardWd, itemH, i);
 			else drawCard(shown.get(i), x, y, cardWd, itemH, i);
 		}
 		if (shown.isEmpty()) {
-			ui.plate(left + gw / 2 - 16, gy + 14, 32, 0xFF8A93A8, 0.3f);
+			ui.plate(left + gw / 2 - 16, gy + 14, 32, 0xFF8A8A98, 0.3f);
 			ui.searchIcon(left + gw / 2 - 4, gy + 26, Theme.DIM);
 			ui.center("Nothing matches", left + gw / 2, gy + 56, Theme.TEXT);
 			ui.center(filter.equals("FAV") ? "Click the heart on a module to favourite it."
@@ -428,19 +431,19 @@ public class RayScreen extends Screen {
 		ui.popClip();
 		if (scrollMax > 0) {
 			// soft fades where content is cut off
-			int edge = 0xFF14171D;
-			if (off > 2) ui.ctx.fillGradient(left - 4, gy, left + gw + 4, gy + 14, Theme.fade(edge, 0.95f), Theme.fade(edge, 0f));
-			if (off < scrollMax - 2) ui.ctx.fillGradient(left - 4, gy + gh - 14, left + gw + 4, gy + gh, Theme.fade(edge, 0f), Theme.fade(edge, 0.95f));
+			int edge = 0xFF0B0B10;
+			if (off > 2) ui.ctx.fillGradient(left - 4, gy, left + gw + 4, gy + 14, Theme.fade(edge, 0.60f), Theme.fade(edge, 0f));
+			if (off < scrollMax - 2) ui.ctx.fillGradient(left - 4, gy + gh - 14, left + gw + 4, gy + gh, Theme.fade(edge, 0f), Theme.fade(edge, 0.60f));
 		}
 		ui.scrollbar(left + innerW - 4, gy, gh, gh, contentH, off);
 
 		// footer: counts on the left, sort on the right
 		int fy = bodyY + innerH - 16;
 		ui.rect(left, fy - 6, innerW, 1, Theme.fade(Theme.STROKE, 0.7f));
-		ui.circle(left + 3, fy + 6, 2, Theme.TILE_ON);
+		ui.circle(left + 3, fy + 6, 2, Theme.accent());
 		ui.text(enabled + " on", left + 10, fy + 3, Theme.DIM);
 		ui.text(shown.size() + " of " + total + " shown", left + 12 + ui.w(enabled + " on") + 12, fy + 3, Theme.MUTE);
-		String sortLabel = "SORT: " + SORTS[Math.max(0, Math.min(SORTS.length - 1, cfg.sortMode))];
+		String sortLabel = "Sort: " + nice(SORTS[Math.max(0, Math.min(SORTS.length - 1, cfg.sortMode))]);
 		int ws = ui.w(sortLabel) + 14;
 		ui.chip(left + innerW - ws, fy, sortLabel, false, () -> {
 			cfg.sortMode = (cfg.sortMode + 1) % SORTS.length;
@@ -476,10 +479,10 @@ public class RayScreen extends Screen {
 			profilesDirty = false;
 		}
 
-		ui.spaced("PROFILES", x + 14, y + 14, Theme.MUTE, 2);
+		ui.headText("Profiles", x + 14, y + 13, Theme.TEXT);
 		String cnt = String.valueOf(profileNames.size());
 		int cw = ui.w(cnt) + 10;
-		ui.rrect(x + w - 14 - cw, y + 11, cw, 14, 7, 0xFF1B1F26);
+		ui.rrect(x + w - 14 - cw, y + 11, cw, 14, 7, Ui.white(0.08f));
 		ui.center(cnt, x + w - 14 - cw / 2, y + 14, Theme.DIM);
 
 		int btnH = 24;
@@ -503,11 +506,10 @@ public class RayScreen extends Screen {
 			boolean hov = ui.over(rx, ry, rw, rowH);
 			float hv = ui.anim("prof" + pn, hov);
 			float sv = ui.anim("profsel" + pn, sel);
-			ui.rrectGrad(rx, ry, rw, rowH, 6, Theme.mix(Theme.mix(0xFF1A1D24, 0xFF22262E, hv), Theme.mix(0xFF1D232F, accent, 0.20f), sv),
-				Theme.mix(Theme.mix(0xFF14171D, 0xFF1B1F26, hv), Theme.mix(0xFF151A22, accent, 0.10f), sv));
-			ui.ring(rx, ry, rw, rowH, 6, Theme.mix(Theme.mix(0xFF262A33, Theme.STROKE_HI, hv), accent, sv * 0.9f));
+			ui.rrect(rx, ry, rw, rowH, 9, Ui.white(0.05f + 0.04f * hv + 0.06f * sv));
+			if (sv > 0.05f) ui.ring(rx, ry, rw, rowH, 9, Theme.fade(accent, 0.7f * sv));
 			// initial on a little plate
-			ui.plate(rx + 5, ry + 5, 18, sel ? accent : 0xFF8A93A8, Math.max(sv, 0.25f));
+			ui.plate(rx + 5, ry + 5, 18, sel ? accent : 0xFF8A8A98, Math.max(sv, 0.25f));
 			String initial = pn.isEmpty() ? "?" : pn.substring(0, 1).toUpperCase();
 			ui.center(initial, rx + 14, ry + 10, Theme.mix(Theme.DIM, 0xFFFFFFFF, Math.max(hv, sv)));
 			ui.text(ui.fit(pn, rw - 32 - (hv > 0.05f ? 36 : 0)), rx + 29, ry + 10, Theme.mix(Theme.DIM, 0xFFFFFFFF, Math.max(hv, sv)));
@@ -515,7 +517,7 @@ public class RayScreen extends Screen {
 			if (hv > 0.02f) {
 				int ix = rx + rw - 19;
 				boolean dh = ui.over(ix, ry + 6, 14, 16);
-				ui.closeIcon(ix + 3, ry + 11, Theme.fade(dh ? 0xFFFF6A76 : Theme.DIM, hv));
+				ui.closeIcon(ix + 3, ry + 11, Theme.fade(dh ? Theme.BAD : Theme.DIM, hv));
 				ui.click("profdel" + pn, ix, ry + 6, 14, 16, () -> {
 					Profiles.delete(pn);
 					if (pn.equals(activeProfile)) activeProfile = null;
@@ -545,7 +547,7 @@ public class RayScreen extends Screen {
 		ui.popClip();
 		if (sideMax > 0) ui.scrollbar(x + w - 9, listTop, listH, listH, contentH, soff);
 
-		ui.pill(x + 10, saveY, w - 20, btnH, "SAVE AS NEW PROFILE", 0xFF8FA3C8, true, () -> {
+		ui.pill(x + 10, saveY, w - 20, btnH, "Save as new profile", 0xFFB8B8C8, true, () -> {
 			String name = Profiles.nextName();
 			if (Profiles.save(name)) {
 				activeProfile = name;
@@ -554,7 +556,7 @@ public class RayScreen extends Screen {
 			}
 		});
 		boolean inGame = client.world != null;
-		ui.pill(x + 10, editY, w - 20, btnH, inGame ? "EDIT HUD LAYOUT" : "JOIN A WORLD TO EDIT", accent, inGame, () -> client.setScreen(new HudEditorScreen()));
+		ui.pill(x + 10, editY, w - 20, btnH, inGame ? "Edit HUD layout" : "Join a world to edit", accent, inGame, () -> client.setScreen(new HudEditorScreen()));
 	}
 
 	// ---------- tooltip ----------
@@ -575,9 +577,8 @@ public class RayScreen extends Screen {
 		if (ty + h > viewH - 4) ty = viewH - h - 4;
 		int accent = Theme.accent();
 		ui.shadow(tx, ty, w, h, 8);
-		ui.panelGrad(tx, ty, w, h, 8, Theme.fade(0xFF1B1E25, 0.98f * a), Theme.fade(0xFF111318, 0.98f * a), Theme.fade(Theme.mix(Theme.STROKE_HI, accent, 0.5f), a));
-		ui.accentLine(tx + 8, ty, w - 16, Theme.fade(accent, a));
-		ui.text(c.name, tx + 11, ty + 9, Theme.fade(0xFFFFFFFF, a));
+		ui.glassPanel(tx, ty, w, h, 9, Theme.fade(0xFF26262F, 0.97f * a), Theme.fade(0xFF0E0E13, 0.97f * a), 0.34f * a, 0.09f * a);
+		ui.headText(c.name, tx + 11, ty + 9, Theme.fade(0xFFFFFFFF, a));
 		int yy = ty + 22;
 		for (String l : lines) {
 			ui.text(l, tx + 11, yy, Theme.fade(Theme.DIM, a));
@@ -628,15 +629,13 @@ public class RayScreen extends Screen {
 		boolean on = c.on.getAsBoolean();
 		float hv = ui.anim("card" + c.id, hov), ov = ui.anim("cardon" + c.id, on);
 		int ly = y - Math.round(hv * 1.5f);
-		int border = Theme.mix(Theme.TILE_OFF, Theme.TILE_ON, ov);
+		int accent = Theme.accent(), accent2 = Theme.accent2();
 		long now = System.currentTimeMillis();
+		int r = 9;
 
-		if (hv > 0.02f) ui.glow(x, ly, w, h, 6, border, hv * 0.85f);
-		int topC = Theme.mix(Theme.mix(0xFF1B1E25, 0xFF23272F, hv), border, 0.07f);
-		int botC = Theme.mix(Theme.mix(0xFF14171C, 0xFF1A1D24, hv), border, 0.04f);
-		ui.rrectGrad(x, ly, w, h, 6, Theme.fade(topC, ap), Theme.fade(botC, ap));
-		ui.ring(x, ly, w, h, 6, Theme.fade(border, (0.58f + 0.42f * hv) * ap));
-		ui.rect(x + 10, ly + 1, w - 20, 1, Theme.fade(0xFFFFFFFF, 0.05f * ap));
+				// a plain glass tile; "on" is shown by the status dot and text, not by tinting the whole tile
+		ui.rrect(x, ly, w, h, r, Theme.fade(Ui.white(0.055f + 0.035f * hv + 0.03f * ov), ap));
+		if (hv > 0.04f) ui.ring(x, ly, w, h, r, Theme.fade(Ui.white(0.16f * hv), ap));
 
 		// a quick expanding ring when the module is switched
 		Long fl = flashAt.get(c.id);
@@ -645,29 +644,29 @@ public class RayScreen extends Screen {
 			if (ft >= 1f) flashAt.remove(c.id);
 			else {
 				int e = Math.round(Theme.easeOutCubic(ft) * 8f);
-				ui.ring(x - e, ly - e, w + 2 * e, h + 2 * e, 6 + e, Theme.fade(border, 0.7f * (1f - ft)));
+				ui.ring(x - e, ly - e, w + 2 * e, h + 2 * e, r + e, Theme.fade(accent, 0.7f * (1f - ft)));
 			}
 		}
 
 		// icon plate
-		int ps = h - 14;
-		ui.plate(x + 7, ly + 7, ps, border, 0.35f + 0.65f * ov);
-		if (ap > 0.5f) ui.ctx.drawItem(c.icon(), x + 7 + (ps - 16) / 2, ly + 7 + (ps - 16) / 2);
+		int ps = h - 16;
+		ui.plate(x + 8, ly + 8, ps, on ? accent : 0xFF8A8A98, 0.25f + 0.75f * ov);
+		if (ap > 0.5f) ui.ctx.drawItem(c.icon(), x + 8 + (ps - 16) / 2, ly + 8 + (ps - 16) / 2);
 
 		// name + status line
-		int tx = x + 7 + ps + 9, tw = w - (tx - x) - 28;
+		int tx = x + 8 + ps + 11, tw = w - (tx - x) - 30;
 		String name = ui.fit(c.name, tw);
-		int ty = ly + 10;
-		ui.text(name, tx, ty, Theme.fade(Theme.mix(0xFFCDD3DF, 0xFFFFFFFF, Math.max(hv, ov * 0.7f)), ap));
-		if (NEW_IDS.contains(c.id)) ui.badge(tx + ui.w(name) + 4, ty - 1, "NEW", Theme.fade(0xFFE0384A, ap), Theme.fade(0xFFFFFFFF, ap));
-		String status = on ? "ON" : "OFF";
-		int sColor = on ? Theme.TILE_ON : 0xFFD7525E;
-		ui.scaledText(status, tx, ly + 25, 0.8f, Theme.fade(sColor, ap), false);
+		int ty = ly + 11;
+		ui.text(name, tx, ty, Theme.fade(Theme.mix(Theme.mix(Theme.DIM, 0xFFFFFFFF, 0.5f), 0xFFFFFFFF, Math.max(hv, ov * 0.7f)), ap));
+		if (NEW_IDS.contains(c.id)) ui.badge(tx + ui.w(name) + 4, ty - 1, "NEW", Theme.fade(accent, ap), Theme.fade(Ui.onAccent(), ap));
+		String status = on ? "On" : "Off";
+		ui.circle(tx + 2, ly + 31, 2, Theme.fade(on ? accent : Theme.MUTE, ap));
+		ui.scaledText(status, tx + 8, ly + 28, 0.85f, Theme.fade(on ? accent : Theme.MUTE, ap), false);
 		if (on && ap > 0.9f) {
 			String live = previewFor(c, now);
 			if (live != null && !live.isEmpty()) {
-				int sw2 = Math.round(ui.w(status) * 0.8f) + 6;
-				ui.scaledText(ui.fit(live, Math.max(10, Math.round((tw - sw2) / 0.8f))), tx + sw2, ly + 25, 0.8f, Theme.fade(Theme.DIM, 0.95f * ap), false);
+				int sw2 = Math.round(ui.w(status) * 0.85f) + 14;
+				ui.scaledText(ui.fit(live, Math.max(10, Math.round((tw - sw2) / 0.85f))), tx + sw2, ly + 28, 0.85f, Theme.fade(Theme.DIM, 0.95f * ap), false);
 			}
 		}
 
@@ -686,7 +685,7 @@ public class RayScreen extends Screen {
 		float hh = ui.anim("heart" + c.id, hhov);
 		if (fav || hv > 0.05f) {
 			float vis = fav ? 1f : hv;
-			ui.heart(hx, ly + 6, Theme.fade(fav ? 0xFFFF6A86 : Theme.mix(0x66FFFFFF, 0xFFFFFFFF, hh), vis * ap));
+			ui.heart(hx, ly + 6, Theme.fade(fav ? 0xFFFF7A9A : Theme.mix(0x66FFFFFF, 0xFFFFFFFF, hh), vis * ap));
 		}
 		ui.hit("fav" + c.id, hx - 2, hy, 16, 14, c::toggleFavorite, null, null);
 
@@ -702,33 +701,31 @@ public class RayScreen extends Screen {
 		if (hov) hovCard = c;
 		boolean on = c.on.getAsBoolean();
 		float hv = ui.anim("row" + c.id, hov), ov = ui.anim("rowon" + c.id, on);
-		int border = Theme.mix(Theme.TILE_OFF, Theme.TILE_ON, ov);
 		int accent = Theme.accent();
-		ui.rrectGrad(x, y, w, h, 6, Theme.fade(Theme.mix(0xFF1B1E25, 0xFF23272F, hv), ap), Theme.fade(Theme.mix(0xFF14171C, 0xFF1A1D24, hv), ap));
-		ui.ring(x, y, w, h, 6, Theme.fade(border, (0.55f + 0.4f * hv) * ap));
+		ui.rrect(x, y, w, h, 9, Theme.fade(Ui.white(0.055f + 0.035f * hv + 0.03f * ov), ap));
+		if (hv > 0.04f) ui.ring(x, y, w, h, 9, Theme.fade(Ui.white(0.16f * hv), ap));
 		int ps = h - 10;
-		ui.plate(x + 5, y + 5, ps, border, 0.3f + 0.7f * ov);
+		ui.plate(x + 5, y + 5, ps, on ? accent : 0xFF8A8A98, 0.25f + 0.75f * ov);
 		if (ap > 0.5f) ui.ctx.drawItem(c.icon(), x + 5 + (ps - 16) / 2, y + 5 + (ps - 16) / 2);
-		ui.text(ui.fit(c.name, Math.max(40, w / 2 - 54)), x + ps + 14, y + (h - 8) / 2, Theme.fade(Theme.mix(0xFFCDD3DF, 0xFFFFFFFF, hv), ap));
-		ui.text(c.category.toUpperCase(), x + w / 2 + 4, y + (h - 8) / 2, Theme.fade(Theme.mix(Theme.MUTE, accent, ov * 0.7f), ap));
+		ui.text(ui.fit(c.name, Math.max(40, w / 2 - 54)), x + ps + 14, y + (h - 8) / 2, Theme.fade(Theme.mix(Theme.TEXT, 0xFFFFFFFF, hv), ap));
+		ui.text(c.category, x + w / 2 + 4, y + (h - 8) / 2, Theme.fade(Theme.mix(Theme.MUTE, accent, ov * 0.7f), ap));
 
 		// right side: [switch] [cog] [heart]
 		int hx = x + w - 22;
 		boolean hh = ui.over(hx, y + 5, 16, h - 10);
-		ui.heart(hx + 4, y + h / 2 - 3, Theme.fade(c.favorite() ? 0xFFFF6A86 : Theme.mix(0xFF3A425A, Theme.DIM, hh ? 1f : 0f), ap));
+		ui.heart(hx + 4, y + h / 2 - 3, Theme.fade(c.favorite() ? 0xFFFF7A9A : Theme.mix(0xFF4A4A58, Theme.DIM, hh ? 1f : 0f), ap));
 		ui.hit("rfav" + c.id, hx, y + 5, 16, h - 10, c::toggleFavorite, null, null);
 
 		int gx = hx - 28;
 		float gv = ui.anim("rowgear" + c.id, ui.over(gx, y + 5, 24, h - 10));
-		ui.rrect(gx, y + 5, 24, h - 10, 7, Theme.fade(Theme.mix(0xFF1D2128, accent, gv * 0.6f), ap));
+		ui.rrect(gx, y + 5, 24, h - 10, 8, Theme.fade(Theme.mix(Ui.white(0.05f), Theme.fade(accent, 0.35f), gv), ap));
 		ui.gearIcon(gx + 8, y + h / 2 - 3, Theme.fade(Theme.mix(Theme.DIM, 0xFFFFFFFF, gv), ap));
 		ui.hit("rgear" + c.id, gx, y + 5, 24, h - 10, () -> client.setScreen(c.settings.apply(this)), null, null);
 
-		int tx = gx - 42;
+		int tx = gx - 44;
 		float k = ui.anim("rowk" + c.id, on);
-		ui.rrectGrad(tx, y + h / 2 - 8, 32, 16, 8, Theme.fade(Theme.mix(0xFF262B35, Theme.TILE_ON, k), ap), Theme.fade(Theme.mix(0xFF1C2028, Theme.mix(Theme.TILE_ON, 0xFF000000, 0.25f), k), ap));
-		ui.circle(tx + 8 + Math.round(k * 16f), y + h / 2, 5, Theme.fade(Theme.mix(0xFF9AA2B3, 0xFFFFFFFF, k), ap));
-		ui.hit("rtog" + c.id, tx - 3, y + 3, 38, h - 6, () -> toggleCard(c), null, null);
+		ui.switchControl(tx, y + h / 2 - 9, Theme.clamp01(k) * ap);
+		ui.hit("rtog" + c.id, tx - 3, y + 3, 40, h - 6, () -> toggleCard(c), null, null);
 
 		ui.hit("row" + c.id, x, y, w, h, () -> toggleCard(c), () -> client.setScreen(c.settings.apply(this)), null);
 	}
@@ -761,11 +758,11 @@ public class RayScreen extends Screen {
 		for (Presets.Preset p : Presets.ALL) {
 			int[] r = f.full();
 			float hv = ui.anim("pre" + p.name(), ui.over(r[0], r[1], r[2], Ui.H));
-			ui.panel(r[0], r[1], r[2], Ui.H, 6, Theme.mix(Theme.CARD, Theme.CARD_HOVER, hv), Theme.mix(Theme.STROKE, Theme.accent(), hv * 0.45f));
+			ui.inset(r[0], r[1], r[2], Ui.H, 8, hv);
 			ui.text(p.name(), r[0] + 10, r[1] + 8, Theme.TEXT);
 			int nameW = ui.w(p.name());
 			ui.text(ui.fit(p.blurb(), Math.max(20, r[2] - nameW - 100)), r[0] + 10 + nameW + 12, r[1] + 8, Theme.MUTE);
-			ui.labelButton(r[0] + r[2] - 58, r[1] + 4, 50, 16, "Apply", 0xFF1E3A8A, () -> Presets.apply(p));
+			ui.labelButton(r[0] + r[2] - 58, r[1] + 4, 50, 16, "Apply", Theme.accent(), () -> Presets.apply(p));
 		}
 		f.note("A preset turns exactly those HUD modules on and every other HUD module off. Your module settings and positions are kept.");
 
@@ -789,19 +786,19 @@ public class RayScreen extends Screen {
 		for (String pn : new ArrayList<>(profileNames)) {
 			int[] r = f.full();
 			boolean sel = pn.equals(activeProfile);
-			ui.panel(r[0], r[1], r[2], Ui.H, 6, Theme.CARD, sel ? Theme.fade(Theme.accent(), 0.8f) : Theme.STROKE);
+			ui.inset(r[0], r[1], r[2], Ui.H, 8, sel ? 1f : 0f);
 			ui.text(ui.fit(pn, r[2] - 150), r[0] + 10, r[1] + 8, Theme.TEXT);
 			int bx = r[0] + r[2] - 124;
-			ui.labelButton(bx, r[1] + 4, 40, 16, "Load", 0xFF1E3A8A, () -> {
+			ui.labelButton(bx, r[1] + 4, 40, 16, "Load", Theme.accent(), () -> {
 				if (Profiles.load(pn)) activeProfile = pn;
 				Toasts.push("Profile loaded: " + pn);
 			});
-			ui.labelButton(bx + 44, r[1] + 4, 40, 16, "Save", 0xFF14532D, () -> {
+			ui.labelButton(bx + 44, r[1] + 4, 40, 16, "Save", Theme.GOOD, () -> {
 				Profiles.save(pn);
 				activeProfile = pn;
 				Toasts.push("Profile updated: " + pn);
 			});
-			ui.labelButton(bx + 88, r[1] + 4, 34, 16, "Del", 0xFF7F1D1D, () -> {
+			ui.labelButton(bx + 88, r[1] + 4, 34, 16, "Del", Theme.BAD, () -> {
 				Profiles.delete(pn);
 				if (pn.equals(activeProfile)) activeProfile = null;
 				profilesDirty = true;
@@ -823,12 +820,12 @@ public class RayScreen extends Screen {
 			final int idx = i;
 			RayConfig.Waypoint w = cfg.waypoints.get(i);
 			int[] r = f.full();
-			ui.panel(r[0], r[1], r[2], Ui.H, 6, Theme.CARD, Theme.STROKE);
+			ui.inset(r[0], r[1], r[2], Ui.H, 8, 0f);
 			String dimName = w.dim.contains("nether") ? "Nether" : (w.dim.contains("end") ? "End" : "Overworld");
 			String label = w.name + "   " + (int) w.x + "  " + (int) w.y + "  " + (int) w.z + "   " + dimName;
 			ui.text(ui.fit(label, r[2] - 44), r[0] + 10, r[1] + 8, Theme.TEXT);
 			int bx = r[0] + r[2] - 24;
-			boolean hov = ui.iconButton(bx, r[1] + 4, 16, 16, 0xFF3A1519, 0xFFB42B35, () -> {
+			boolean hov = ui.iconButton(bx, r[1] + 4, 16, 16, 0xFF3A2A2E, Theme.BAD, () -> {
 				if (idx < RayConfig.get().waypoints.size()) RayConfig.get().waypoints.remove(idx);
 				RayConfig.save();
 			});
@@ -866,7 +863,7 @@ public class RayScreen extends Screen {
 		int cxs = f.x();
 		for (int sz : sizes) {
 			final int val = sz;
-			cxs += ui.chip(cxs, sizeTop, sz == 100 ? "AUTO" : sz + "%", shownScale == sz, () -> {
+			cxs += ui.chip(cxs, sizeTop, sz == 100 ? "Auto" : sz + "%", shownScale == sz, () -> {
 				pendingScale = null;
 				cfg.menuScale = val;
 				ui.resetAppear();
@@ -881,7 +878,7 @@ public class RayScreen extends Screen {
 		ccx += ui.w("Tiles per row") + 10;
 		for (int co : colOpts) {
 			final int val = co;
-			ccx += ui.chip(ccx, colTop, co == 0 ? "AUTO" : String.valueOf(co), cfg.menuCols == co, () -> {
+			ccx += ui.chip(ccx, colTop, co == 0 ? "Auto" : String.valueOf(co), cfg.menuCols == co, () -> {
 				cfg.menuCols = val;
 				ui.resetAppear();
 			}) + 4;

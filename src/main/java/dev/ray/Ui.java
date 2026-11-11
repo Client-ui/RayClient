@@ -228,16 +228,15 @@ public final class Ui {
 		return (a << 24) | (argb & 0xFFFFFF);
 	}
 
-	/** The shape of one corner for a radius: merged row runs, optional soft edge pixels, and a ring outline as runs. */
+	/** The shape of one corner for a radius: merged runs of fully covered pixels, single soft edge pixels, and a ring outline. */
 	private static final class Corner {
 		final int r;
 		/** Rows/columns covered by the corner (the straight edges start here). Small radii use a cut corner: far fewer fills. */
 		final int edge;
-		/** {firstRow, endRow, inset}: rows [firstRow, endRow) start inset pixels from the left edge. */
+		/** {firstRow, endRow, inset}: rows [firstRow, endRow) are fully covered starting inset pixels from the left edge. */
 		final int[][] runs;
-		/** Soft edge pixel per row (column inset-1) and its coverage; only for r >= 8. */
-		final float[] aa;
-		final int[] aaCol;
+		/** Soft edge pixels {row, column, coverage 0..255}: true anti-aliasing for radii of 7 and up. */
+		final int[][] soft;
 		/** Outline runs: {row, col0, col1, alpha0to255}. */
 		final int[][] ring;
 
@@ -249,8 +248,7 @@ public final class Ui {
 				edge = k;
 				runs = new int[k][];
 				for (int i = 0; i < k; i++) runs[i] = new int[]{i, i + 1, k - i};
-				aa = new float[0];
-				aaCol = new int[0];
+				soft = new int[0][];
 				ring = new int[k - 1][];
 				for (int i = 1; i < k; i++) ring[i - 1] = new int[]{i, k - i, k - i, 255};
 				return;
@@ -263,32 +261,27 @@ public final class Ui {
 					cov[i][j] = clamp01((float) (r - d + 0.5));
 				}
 			}
-			int[] inset = new int[r];
+			// per row: the first fully covered column, and the soft pixels before it
+			int[] full = new int[r];
+			java.util.List<int[]> softList = new java.util.ArrayList<>();
 			for (int i = 0; i < r; i++) {
 				int j = 0;
-				while (j < r - 1 && cov[i][j] < 0.5f) j++;
-				inset[i] = j;
+				while (j < r - 1 && cov[i][j] < 0.72f) j++;
+				full[i] = j;
+				for (int k = 0; k < j; k++) {
+					if (cov[i][k] >= 0.22f) softList.add(new int[]{i, k, Math.round(cov[i][k] * 255f)});
+				}
 			}
+			soft = softList.toArray(new int[0][]);
 			java.util.List<int[]> rl = new java.util.ArrayList<>();
 			int start = 0;
 			for (int i = 1; i <= r; i++) {
-				if (i == r || inset[i] != inset[start]) {
-					rl.add(new int[]{start, i, inset[start]});
+				if (i == r || full[i] != full[start]) {
+					rl.add(new int[]{start, i, full[start]});
 					start = i;
 				}
 			}
 			runs = rl.toArray(new int[0][]);
-			aa = new float[r];
-			aaCol = new int[r];
-			if (r >= 8) {
-				for (int i = 0; i < r; i++) {
-					int j = inset[i] - 1;
-					if (j >= 0 && cov[i][j] >= 0.22f) {
-						aa[i] = cov[i][j];
-						aaCol[i] = j;
-					}
-				}
-			}
 			// outline: the cells of the 1px band along the edge, merged along each row
 			java.util.List<int[]> ringList = new java.util.ArrayList<>();
 			for (int i = 0; i < r; i++) {
@@ -300,7 +293,7 @@ public final class Ui {
 						double d = Math.hypot(r - (j + 0.5), r - (i + 0.5));
 						v = Math.max(0f, clamp01((float) (r - d + 0.5)) - clamp01((float) (r - 1 - d + 0.5)));
 					}
-					boolean lit = v >= (r <= 6 ? 0.55f : 0.35f);
+					boolean lit = v >= 0.30f;
 					if (lit) {
 						if (s0 < 0) {
 							s0 = j;
@@ -330,8 +323,8 @@ public final class Ui {
 	}
 
 	/**
-	 * Rounded rectangle with a vertical gradient from c1 (top) to c2 (bottom). The gradient runs through the middle;
-	 * the corner rows use the colour at their end (a few pixels of difference is not visible).
+	 * Rounded rectangle with a vertical gradient from c1 (top) to c2 (bottom). Corner rows are coloured by their own
+	 * position, so the gradient is smooth even on shapes that are all corner (switches, capsules).
 	 */
 	public void rrectGrad(int x, int y, int w, int h, int r, int c1, int c2) {
 		if (w <= 0 || h <= 0) return;
@@ -340,33 +333,31 @@ public final class Ui {
 		if (r <= 1) {
 			if (flat) ctx.fill(x, y, x + w, y + h, c1);
 			else ctx.fillGradient(x, y, x + w, y + h, c1, c2);
-			if (r == 1 && w > 2 && h > 2) { // single-pixel corner cut
-				// nothing to add: a 1px radius is invisible at this scale
-			}
 			return;
 		}
 		Corner cn = corner(r);
 		int e = cn.edge;
-		int topCol = flat ? c1 : Theme.mix(c1, c2, e * 0.5f / h);
-		int botCol = flat ? c1 : Theme.mix(c1, c2, 1f - e * 0.5f / h);
-		if (flat) ctx.fill(x, y + e, x + w, y + h - e, c1);
-		else ctx.fillGradient(x, y + e, x + w, y + h - e, Theme.mix(c1, c2, e / (float) h), Theme.mix(c1, c2, (h - e) / (float) h));
+		if (h - 2 * e > 0) {
+			if (flat) ctx.fill(x, y + e, x + w, y + h - e, c1);
+			else ctx.fillGradient(x, y + e, x + w, y + h - e, Theme.mix(c1, c2, e / (float) h), Theme.mix(c1, c2, (h - e) / (float) h));
+		}
 		for (int[] run : cn.runs) {
 			int ins = run[2];
+			float tm = (run[0] + run[1]) * 0.5f / h;
+			int topCol = flat ? c1 : Theme.mix(c1, c2, tm);
+			int botCol = flat ? c1 : Theme.mix(c1, c2, 1f - tm);
 			ctx.fill(x + ins, y + run[0], x + w - ins, y + run[1], topCol);
 			ctx.fill(x + ins, y + h - run[1], x + w - ins, y + h - run[0], botCol);
 		}
-		if (r >= 8) {
-			for (int i = 0; i < r; i++) {
-				float cv = cn.aa[i];
-				if (cv <= 0f) continue;
-				int j = cn.aaCol[i];
-				int ct = scaleAlpha(topCol, cv), cb = scaleAlpha(botCol, cv);
-				ctx.fill(x + j, y + i, x + j + 1, y + i + 1, ct);
-				ctx.fill(x + w - 1 - j, y + i, x + w - j, y + i + 1, ct);
-				ctx.fill(x + j, y + h - 1 - i, x + j + 1, y + h - i, cb);
-				ctx.fill(x + w - 1 - j, y + h - 1 - i, x + w - j, y + h - i, cb);
-			}
+		for (int[] sp : cn.soft) {
+			int i = sp[0], j = sp[1];
+			float cv = sp[2] / 255f;
+			float tt = (i + 0.5f) / h;
+			int ct = scaleAlpha(flat ? c1 : Theme.mix(c1, c2, tt), cv), cb = scaleAlpha(flat ? c1 : Theme.mix(c1, c2, 1f - tt), cv);
+			ctx.fill(x + j, y + i, x + j + 1, y + i + 1, ct);
+			ctx.fill(x + w - 1 - j, y + i, x + w - j, y + i + 1, ct);
+			ctx.fill(x + j, y + h - 1 - i, x + j + 1, y + h - i, cb);
+			ctx.fill(x + w - 1 - j, y + h - 1 - i, x + w - j, y + h - i, cb);
 		}
 	}
 
@@ -402,50 +393,116 @@ public final class Ui {
 	/** Rounded panel with a 1px outline. The fill may be translucent (glass). */
 	public void panel(int x, int y, int w, int h, int r, int fill, int stroke) {
 		rrect(x, y, w, h, r, fill);
-		ring(x, y, w, h, r, stroke);
+		rimGlass(x, y, w, h, r, 0.22f, 0.07f);
+		ring(x, y, w, h, r, Theme.fade(stroke, 0.35f));
 	}
 
 	/** Rounded panel with a vertical gradient fill and a 1px outline. */
 	public void panelGrad(int x, int y, int w, int h, int r, int top, int bottom, int stroke) {
 		rrectGrad(x, y, w, h, r, top, bottom);
-		ring(x, y, w, h, r, stroke);
+		int rim = (stroke >>> 24) / 255f > 0.02f ? 1 : 0;
+		float sa = (stroke >>> 24) / 255f;
+		rimGlass(x, y, w, h, r, 0.30f * Math.min(1f, sa * 2f), 0.08f * Math.min(1f, sa * 2f));
+		if (rim == 1) ring(x, y, w, h, r, Theme.fade(stroke, 0.30f));
+		if (w > 2 * r + 8) specular(x + r, y + 1, w - 2 * r, 0.20f * Math.min(1f, sa * 2f));
 	}
 
-	/** Soft drop shadow: three translucent rectangles that grow outward (cheap: 3 fills). */
+	/**
+	 * Soft drop shadow: two translucent layers that grow outward. The layers are only a few percent opaque, so their
+	 * corners are cut (a handful of fills) instead of smoothly rounded (dozens of fills): you cannot tell the difference.
+	 */
 	public void shadow(int x, int y, int w, int h, int r) {
 		if (!RayConfig.get().uiShadows) return;
-		for (int k = 9; k >= 3; k -= 3) {
-			ctx.fill(x - k, y - k + 3, x + w + k, y + h + k + 3, Theme.fade(0xFF000000, 0.045f));
+		rrect(x - 8, y - 4, w + 16, h + 16, 6, Theme.fade(0xFF000000, 0.05f));
+	}
+
+	/** A coloured halo around a shape (hovered or enabled controls, focused fields). strength is 0..1. Cheap, see {@link #shadow}. */
+	public void glow(int x, int y, int w, int h, int r, int color, float strength) {
+		// intentionally empty: coloured halos were removed from the design (kept so existing callers still compile)
+	}
+
+	/** The window colour made see-through according to the Glass setting, so the scene behind it shows. */
+	public int glass(int opaque) {
+		return Theme.fade(opaque, 0.18f + 0.55f * RayConfig.get().uiGlass / 100.0f);
+	}
+
+	// ---------- liquid glass ----------
+
+	static int white(float a) {
+		return Theme.fade(0xFFFFFFFF, Math.max(0f, Math.min(1f, a)));
+	}
+
+	/**
+	 * The rim of a glass surface: bright along the top-left where light would catch it, fading to a faint line along the
+	 * bottom-right. hi and lo are the white opacities (0..1) of the two ends.
+	 */
+	public void rimGlass(int x, int y, int w, int h, int r, float hi, float lo) {
+		rimGlass(x, y, w, h, r, hi, lo, 0xFFFFFFFF);
+	}
+
+	/** Same, with the light tinted (an accent rim for an enabled control). */
+	public void rimGlass(int x, int y, int w, int h, int r, float hi, float lo, int tint) {
+		if (w <= 1 || h <= 1) return;
+		r = Math.min(r, Math.min(w, h) / 2);
+		int cTL = Theme.fade(tint, Math.min(1f, hi)), cTR = Theme.fade(tint, Math.min(1f, hi * 0.5f + lo * 0.5f)), cBL = Theme.fade(tint, Math.min(1f, lo * 1.3f)), cBR = Theme.fade(tint, Math.min(1f, lo));
+		int e = r <= 1 ? 0 : corner(r).edge;
+		int x1 = x + e, x2 = x + w - e;
+		final int segs = 4;
+		for (int i = 0; i < segs; i++) {
+			int a = x1 + (x2 - x1) * i / segs, b = x1 + (x2 - x1) * (i + 1) / segs;
+			ctx.fill(a, y, b, y + 1, Theme.mix(cTL, cTR, (i + 0.5f) / segs));
+			ctx.fill(a, y + h - 1, b, y + h, Theme.mix(cBL, cBR, (i + 0.5f) / segs));
+		}
+		ctx.fillGradient(x, y + e, x + 1, y + h - e, cTL, cBL);
+		ctx.fillGradient(x + w - 1, y + e, x + w, y + h - e, cTR, cBR);
+		if (r <= 1) return;
+		for (int[] run : corner(r).ring) {
+			int i = run[0], j0 = run[1], j1 = run[2];
+			float q = run[3] >= 250 ? 1f : run[3] / 255f;
+			ctx.fill(x + j0, y + i, x + j1 + 1, y + i + 1, Theme.fade(cTL, q));
+			ctx.fill(x + w - 1 - j1, y + i, x + w - j0, y + i + 1, Theme.fade(cTR, q));
+			ctx.fill(x + j0, y + h - 1 - i, x + j1 + 1, y + h - i, Theme.fade(cBL, q));
+			ctx.fill(x + w - 1 - j1, y + h - 1 - i, x + w - j0, y + h - i, Theme.fade(cBR, q));
 		}
 	}
 
-	/** A coloured halo around a shape (hovered or enabled cards, focused fields). strength is 0..1. */
-	public void glow(int x, int y, int w, int h, int r, int color, float strength) {
-		if (strength < 0.02f || !RayConfig.get().uiShadows) return;
-		ctx.fill(x - 4, y - 4, x + w + 4, y + h + 4, Theme.fade(color, 0.05f * strength));
-		ctx.fill(x - 2, y - 2, x + w + 2, y + h + 2, Theme.fade(color, 0.08f * strength));
+	/** A 1px white highlight that is brightest in the middle and fades toward both ends (light on the glass edge). */
+	public void specular(int x, int y, int w, float peak) {
+		if (w <= 8) return;
+		final int segs = 8;
+		for (int i = 0; i < segs; i++) {
+			int x1 = x + w * i / segs, x2 = x + w * (i + 1) / segs;
+			double a = Math.sin(((i + 0.5) / segs) * Math.PI);
+			ctx.fill(x1, y, x2, y + 1, white((float) (peak * a * a)));
+		}
 	}
-
-	/** The window colour made see-through according to the Glass setting, so the blurred game shows behind it. */
-	public int glass(int opaque) {
-		return Theme.fade(opaque, RayConfig.get().uiGlass / 100.0f);
-	}
-
-	// ---------- surfaces (the new look) ----------
 
 	/**
-	 * A floating glass surface: soft shadow, a vertical glass gradient, a hairline border, a bright top edge and a
-	 * thin accent light along the top that fades out at both ends.
+	 * A glass pane: tinted body, a soft sheen over the upper part, a light-catching rim and a specular edge.
+	 * top and bottom are the body colours (usually translucent).
 	 */
-	public void surface(int x, int y, int w, int h, int r) {
-		r = Math.min(r, 10);
-		shadow(x, y, w, h, r);
-		rrectGrad(x, y, w, h, r, glass(0xFF191C23), glass(0xFF0F1115));
-		ring(x, y, w, h, r, Theme.STROKE);
-		accentLine(x + r, y, w - 2 * r, Theme.accent());
+	public void glassPanel(int x, int y, int w, int h, int r, int top, int bottom, float rimHi, float rimLo) {
+		if (w <= 2 || h <= 2) return;
+		r = Math.min(r, Math.min(w, h) / 2);
+		rrectGrad(x, y, w, h, r, top, bottom);
+		rimGlass(x, y, w, h, r, rimHi * 0.7f, rimLo);
 	}
 
-	/** A 1px line that is brightest in the middle and fades toward both ends. */
+	/** A floating glass window: soft shadow, the pane, and a faint warm bounce light along the bottom edge. */
+	public void surface(int x, int y, int w, int h, int r) {
+		r = Math.min(r, 14);
+		shadow(x, y, w, h, r);
+		glassPanel(x, y, w, h, r, glass(0xFF1B1B21), glass(0xFF0C0C10), 0.22f, 0.08f);
+	}
+
+	/** A recessed field or row inside a window: a faint lighter tint and a hairline. hover is 0..1. */
+	public void inset(int x, int y, int w, int h, int r, float hover) {
+		rrect(x, y, w, h, r, white(0.05f + 0.045f * hover));
+		// borderless like a settings list; the hairline only appears under the cursor (saves a lot of draw calls)
+		if (hover > 0.05f) ring(x, y, w, h, r, Theme.mix(white(0.12f), Theme.fade(Theme.accent(), 0.60f), hover * 0.7f));
+	}
+
+	/** A 1px line that is brightest in the middle and fades toward both ends, in any colour. */
 	public void accentLine(int x, int y, int w, int color) {
 		if (w <= 8) return;
 		final int segs = 10;
@@ -456,10 +513,33 @@ public final class Ui {
 		}
 	}
 
-	/** A rounded plate behind an icon, tinted by tint (strength 0..1 = how strongly). */
+	/** A horizontal gradient bar (c1 on the left, c2 on the right) with round ends. */
+	public void gradBar(int x, int y, int w, int h, int c1, int c2) {
+		if (w <= 0 || h <= 0) return;
+		rrect(x, y, w, h, h / 2, c1); // flat on purpose: gradients on every bar read as generated
+	}
+
+	/** Text colour that reads on top of the accent colour (white, or near-black on a light accent such as Ice). */
+	public static int onAccent() {
+		int c = Theme.accent();
+		float l = (0.299f * ((c >> 16) & 0xFF) + 0.587f * ((c >> 8) & 0xFF) + 0.114f * (c & 0xFF)) / 255f;
+		return l > 0.78f ? 0xFF121216 : 0xFFFFFFFF;
+	}
+
+	/** A solid accent surface (primary buttons, selected states): accent to accent2 with a bright top edge. */
+	public void accentFill(int x, int y, int w, int h, int r, float lift) {
+		rrect(x, y, w, h, r, Theme.mix(Theme.accent(), 0xFFFFFFFF, 0.10f * lift));
+	}
+
+	/** A status dot with a soft halo. */
+	public void dot(int cx, int cy, int r, int color, boolean halo) {
+		if (halo) circle(cx, cy, r + 3, Theme.fade(color, 0.16f));
+		circle(cx, cy, r, color);
+	}
+
+	/** A rounded plate behind an icon: a glass tile with a faint tint (strength 0..1 = how strongly). */
 	public void plate(int x, int y, int size, int tint, float strength) {
-		int r = Math.max(4, Math.min(6, size / 4));
-		rrectGrad(x, y, size, size, r, Theme.mix(0xFF262A33, tint, 0.16f + 0.30f * strength), Theme.mix(0xFF181B21, tint, 0.08f + 0.18f * strength));
+		rrect(x, y, size, size, 6, white(0.06f + 0.04f * strength));
 	}
 
 	// ---------- animation ----------
@@ -638,15 +718,44 @@ public final class Ui {
 		ClientFont.draw(ctx, tr, s, rx - ClientFont.width(tr, s), y, c, false);
 	}
 
+	/** Heading text: the bold face of the client font. */
+	public void headText(String s, int x, int y, int c) {
+		ClientFont.drawHead(ctx, tr, s, x, y, c, false);
+	}
+
+	public int headWidth(String s) {
+		return ClientFont.widthHead(tr, s);
+	}
+
+	public void headCenter(String s, int cx, int y, int c) {
+		ClientFont.drawHead(ctx, tr, s, cx - ClientFont.widthHead(tr, s) / 2, y, c, false);
+	}
+
+	public void scaledHead(String s, int x, int y, float scale, int c) {
+		ctx.getMatrices().pushMatrix();
+		ctx.getMatrices().translate((float) x, (float) y);
+		ctx.getMatrices().scale(scale, scale);
+		ClientFont.drawHead(ctx, tr, s, 0, 0, c, false);
+		ctx.getMatrices().popMatrix();
+	}
+
 	/** Width of text drawn with {@link #spaced} (sp extra pixels between letters). */
 	public int spacedWidth(String s, int sp) {
+		if (sp <= 1) return ClientFont.width(tr, s);
 		int w = 0;
 		for (int i = 0; i < s.length(); i++) w += ClientFont.width(tr, ch(s.charAt(i))) + sp;
 		return Math.max(0, w - sp);
 	}
 
-	/** Letter-spaced text, used for tabs and headings. */
+	/**
+	 * Letter-spaced text, used for small headings. Spacing of 1 or less is drawn as one plain string (the font already
+	 * has good spacing, and it is one draw call instead of one per letter); wider spacing is drawn letter by letter.
+	 */
 	public void spaced(String s, int x, int y, int c, int sp) {
+		if (sp <= 1) {
+			ClientFont.draw(ctx, tr, s, x, y, c, false);
+			return;
+		}
 		int cx = x;
 		for (int i = 0; i < s.length(); i++) {
 			String g = ch(s.charAt(i));
@@ -695,16 +804,20 @@ public final class Ui {
 
 	// ---------- small widgets ----------
 
-	/** Filter chip. Returns its width so callers can lay chips out in a row. */
+	/** Filter chip (a capsule). Returns its width so callers can lay chips out in a row. */
 	public int chip(int x, int y, String label, boolean active, Runnable click) {
-		int w = ClientFont.width(tr, label) + 14;
-		float a = anim("chip" + label, over(x, y, w, 14));
+		int w = ClientFont.width(tr, label) + 18;
+		float a = anim("chip" + label, over(x, y, w, 16));
 		float on = anim("chipon" + label, active);
-		int accent = Theme.accent();
-		rrect(x, y, w, 14, 5, Theme.mix(Theme.mix(Theme.CARD, Theme.CARD_HOVER, a), Theme.mix(Theme.CARD, accent, 0.30f), on));
-		ring(x, y, w, 14, 5, Theme.mix(Theme.STROKE, accent, on * 0.85f));
-		text(label, x + 7, y + 3, active ? 0xFFFFFFFF : Theme.mix(Theme.DIM, 0xFFFFFFFF, a * 0.6f));
-		click("chip" + label, x, y, w, 14, click);
+		if (on > 0.02f) {
+			rrect(x, y, w, 16, 8, Theme.fade(Theme.accent(), on));
+		}
+		if (on < 0.98f) {
+			rrect(x, y, w, 16, 8, white((0.05f + 0.05f * a) * (1f - on)));
+			ring(x, y, w, 16, 8, white((0.12f + 0.08f * a) * (1f - on)));
+		}
+		text(label, x + 9, y + 4, Theme.mix(Theme.mix(Theme.DIM, 0xFFFFFFFF, a * 0.7f), onAccent(), on));
+		click("chip" + label, x, y, w, 16, click);
 		return w;
 	}
 
@@ -713,33 +826,46 @@ public final class Ui {
 		boolean hov = over(x, y, w, h);
 		float a = anim("ib" + x + "," + y, hov);
 		float p = anim("ibp" + x + "," + y, held(x, y, w, h));
-		rrect(x, y + Math.round(p), w, h, 6, Theme.mix(base, hover, a));
+		rrect(x, y + Math.round(p), w, h, 7, Theme.mix(Theme.fade(base, 0.55f), Theme.fade(hover, 0.85f), a));
+		ring(x, y + Math.round(p), w, h, 7, white(0.10f + 0.12f * a));
 		click("ib" + x + "," + y, x, y, w, h, click);
 		return hov;
 	}
 
+	/** A small tinted button (Load / Save / Delete...). color is the tint; it only shows as a faint wash and on hover. */
 	public void labelButton(int x, int y, int w, int h, String label, int color, Runnable action) {
 		boolean hov = over(x, y, w, h);
 		float a = anim("lb" + label + x, hov);
 		float p = anim("lbp" + label + x, held(x, y, w, h));
 		int yy = y + Math.round(p);
-		rrectGrad(x, yy, w, h, 6, Theme.fade(Theme.mix(color, 0xFFFFFFFF, 0.10f), 0.80f + 0.20f * a), Theme.fade(color, 0.80f + 0.20f * a));
-		center(label, x + w / 2, yy + (h - 8) / 2, 0xFFFFFFFF);
+		rrect(x, yy, w, h, 7, Theme.mix(white(0.07f), Theme.fade(color, 0.30f), 0.35f + 0.65f * a));
+		center(label, x + w / 2, yy + (h - 8) / 2, Theme.mix(0xFFE4E4EC, 0xFFFFFFFF, a));
 		click("lb" + label + x + "," + y, x, y, w, h, action);
 	}
 
-	/** A generic button: dark surface with a tint colour on hover. enabled=false greys it out. */
+	/** A generic glass button; tint colours its hover state. enabled=false greys it out. */
 	public void pill(int x, int y, int w, int h, String label, int tint, boolean enabled, Runnable action) {
 		boolean hov = enabled && over(x, y, w, h);
 		float a = anim("pl" + label + x + "," + y, hov);
 		float p = anim("plp" + label + x + "," + y, enabled && held(x, y, w, h));
 		int yy = y + Math.round(p);
-		int fillTop = enabled ? Theme.mix(0xFF1B1F26, Theme.mix(0xFF1B1F26, tint, 0.38f), a) : 0xFF12141A;
-		int fillBot = enabled ? Theme.mix(0xFF14171D, Theme.mix(0xFF14171D, tint, 0.26f), a) : 0xFF101217;
-		rrectGrad(x, yy, w, h, 6, fillTop, fillBot);
-		ring(x, yy, w, h, 6, enabled ? Theme.mix(Theme.STROKE, tint, 0.35f + 0.55f * a) : 0xFF1E222A);
-		spacedCenter(label, x + w / 2, yy + (h - 8) / 2, enabled ? Theme.mix(0xFFD5DAE6, 0xFFFFFFFF, a) : Theme.MUTE, 1);
+		int r = Math.min(9, h / 2);
+		rrect(x, yy, w, h, r, enabled ? white(0.07f + 0.06f * a) : white(0.03f));
+		if (enabled && a > 0.05f) ring(x, yy, w, h, r, white(0.16f * a));
+		center(label, x + w / 2, yy + (h - 8) / 2, enabled ? Theme.mix(0xFFD8D8E2, 0xFFFFFFFF, a) : Theme.MUTE);
 		if (enabled) click("pl" + label + x + "," + y, x, y, w, h, action);
+	}
+
+	/** The primary button: filled with the accent gradient. */
+	public void primary(int x, int y, int w, int h, String label, Runnable action) {
+		boolean hov = over(x, y, w, h);
+		float a = anim("pr" + label + x + "," + y, hov);
+		float p = anim("prp" + label + x + "," + y, held(x, y, w, h));
+		int yy = y + Math.round(p);
+		int r = Math.min(9, h / 2);
+		accentFill(x, yy, w, h, r, a);
+		center(label, x + w / 2, yy + (h - 8) / 2, onAccent());
+		click("pr" + label + x + "," + y, x, y, w, h, action);
 	}
 
 	public void scrollbar(int x, int y, int h, int viewH, int contentH, int scroll) {
@@ -747,64 +873,59 @@ public final class Ui {
 		boolean hov = over(x - 3, y, 9, h);
 		float a = anim("sbar" + x + "," + y, hov);
 		int w = 3 + Math.round(a);
-		rrect(x, y, w, h, w / 2, 0x16FFFFFF);
+		rrect(x, y, w, h, w / 2, white(0.06f));
 		int th = Math.max(18, h * viewH / contentH);
 		int ty = y + (int) ((long) (h - th) * scroll / Math.max(1, contentH - viewH));
-		rrect(x, ty, w, th, w / 2, Theme.fade(Theme.accent(), 0.65f + 0.3f * a));
+		rrect(x, ty, w, th, w / 2, Theme.mix(white(0.30f), Theme.fade(Theme.accent(), 0.85f), a));
 	}
 
 	/** A progress bar with a soft moving shine on the filled part. frac is 0..1. */
 	public void progress(int x, int y, int w, int h, float frac, int color) {
-		rrect(x, y, w, h, h / 2, 0xFF1E222A);
-		ring(x, y, w, h, h / 2, 0xFF2A2F3A);
+		rrect(x, y, w, h, h / 2, white(0.07f));
+		ring(x, y, w, h, h / 2, white(0.10f));
 		int fw = Math.round((w - 2) * Theme.clamp01(frac));
 		if (fw < h) fw = frac <= 0.001f ? 0 : h;
 		if (fw <= 0) return;
-		rrectGrad(x + 1, y + 1, fw, h - 2, Math.max(1, (h - 2) / 2), Theme.mix(color, 0xFFFFFFFF, 0.18f), color);
-		if (RayConfig.get().uiAnimations && fw > 12) {
-			float t = (System.currentTimeMillis() % 1400L) / 1400f;
-			int sx = x + 1 + Math.round((fw + 24) * t) - 24;
-			ctx.enableScissor(x + 1, y + 1, x + 1 + fw, y + h - 1);
-			ctx.fillGradient(sx, y + 1, sx + 12, y + h - 1, 0x00FFFFFF, 0x30FFFFFF);
-			ctx.fillGradient(sx + 12, y + 1, sx + 24, y + h - 1, 0x30FFFFFF, 0x00FFFFFF);
-			ctx.disableScissor();
-		}
+		rrect(x + 1, y + 1, fw, h - 2, (h - 2) / 2, color);
 	}
 
 	// ---------- settings rows (r = {x, y, width}) ----------
 
 	private void card(int[] r, String id) {
 		float a = anim("h" + id, over(r[0], r[1], r[2], H));
-		rrectGrad(r[0], r[1], r[2], H, 6, Theme.mix(0xFF1A1D24, 0xFF22262E, a), Theme.mix(0xFF14171D, 0xFF1B1F26, a));
-		ring(r[0], r[1], r[2], H, 6, Theme.mix(Theme.STROKE, Theme.accent(), a * 0.5f));
+		inset(r[0], r[1], r[2], H, 8, a);
+	}
+
+	/** An iOS-style switch. k is 0..1 (animated). */
+	public void switchControl(int tx, int ty, float k) {
+		if (k < 0.98f) rrect(tx, ty, 34, 18, 9, white(0.13f * (1f - k)));
+		if (k > 0.02f) rrect(tx, ty, 34, 18, 9, Theme.fade(Theme.accent(), k));
+		int kx = tx + 9 + Math.round(k * 16f), ky = ty + 9;
+		circle(kx, ky, 7, Theme.mix(0xFFCFCFD8, Ui.onAccent() == 0xFFFFFFFF ? 0xFFFFFFFF : 0xFF121216, k));
 	}
 
 	public void toggle(int[] r, String name, boolean on, Runnable flip) {
 		card(r, "t" + name);
 		float k = anim("k" + name, on);
-		if (k > 0.02f) rrectGrad(r[0] + 1, r[1] + 1, r[2] - 2, H - 2, 6, Theme.fade(Theme.accent(), 0.10f * k), Theme.fade(Theme.accent(), 0.02f * k));
 		text(fit(name, r[2] - 64), r[0] + 11, r[1] + 8, Theme.mix(Theme.DIM, Theme.TEXT, 0.4f + 0.6f * k));
-		int tx = r[0] + r[2] - 40, ty = r[1] + 4;
-		if (k > 0.3f) ring(tx - 1, ty - 1, 34, 18, 9, Theme.fade(Theme.accent(), 0.32f * k));
-		rrectGrad(tx, ty, 32, 16, 8, Theme.mix(0xFF262B35, Theme.mix(Theme.accent(), 0xFFFFFFFF, 0.12f), k), Theme.mix(0xFF1C2028, Theme.accent(), k));
-		circle(tx + 8 + Math.round(k * 16f), ty + 8, 5, Theme.mix(0xFF9AA2B3, 0xFFFFFFFF, k));
+		switchControl(r[0] + r[2] - 44, r[1] + 3, k);
 		click("t" + name, r[0], r[1], r[2], H, flip);
 	}
 
 	public void choice(int[] r, String name, String value, Runnable next) {
 		card(r, "c" + name);
 		String v = fit(value, r[2] / 2);
-		text(fit(name, r[2] - w(v) - 30), r[0] + 10, r[1] + 8, Theme.TEXT);
-		right(v, r[0] + r[2] - 17, r[1] + 8, Theme.accent());
+		text(fit(name, r[2] - w(v) - 30), r[0] + 11, r[1] + 8, Theme.TEXT);
+		right(v, r[0] + r[2] - 18, r[1] + 8, Theme.accent());
 		chevron(r[0] + r[2] - 11, r[1] + 9, Theme.MUTE);
 		click("c" + name, r[0], r[1], r[2], H, next);
 	}
 
 	public void colorChoice(int[] r, String name, String valueName, int swatch, Runnable next) {
 		card(r, "cc" + name);
-		text(fit(name, r[2] - 80), r[0] + 10, r[1] + 8, Theme.TEXT);
-		rrect(r[0] + r[2] - 24, r[1] + 5, 14, 14, 4, swatch);
-		ring(r[0] + r[2] - 24, r[1] + 5, 14, 14, 4, 0x55FFFFFF);
+		text(fit(name, r[2] - 80), r[0] + 11, r[1] + 8, Theme.TEXT);
+		circle(r[0] + r[2] - 17, r[1] + 12, 7, swatch);
+		ring(r[0] + r[2] - 24, r[1] + 5, 14, 14, 7, white(0.45f));
 		right(valueName, r[0] + r[2] - 30, r[1] + 8, Theme.DIM);
 		click("cc" + name, r[0], r[1], r[2], H, next);
 	}
@@ -812,19 +933,18 @@ public final class Ui {
 	/** Slider with a fully custom value label. */
 	public void sliderShown(int[] r, String name, int min, int max, int value, String shown, IntConsumer set) {
 		card(r, "s" + name);
-		text(fit(name, r[2] - w(shown) - 24), r[0] + 10, r[1] + 4, Theme.TEXT);
-		right(shown, r[0] + r[2] - 10, r[1] + 4, Theme.DIM);
-		final int bx = r[0] + 10, bw = r[2] - 20, by = r[1] + 16;
+		text(fit(name, r[2] - w(shown) - 24), r[0] + 11, r[1] + 4, Theme.TEXT);
+		right(shown, r[0] + r[2] - 11, r[1] + 4, Theme.DIM);
+		final int bx = r[0] + 11, bw = r[2] - 22, by = r[1] + 17;
 		String id = "s" + name + "@" + r[0] + "," + r[1];
 		boolean active = dragId != null && dragId.equals(id);
 		float hv = anim("sk" + id, active || over(r[0], r[1] + 10, r[2], 14));
-		rrect(bx, by, bw, 4, 2, 0xFF2A303B);
+		rrect(bx, by, bw, 4, 2, white(0.12f));
 		float target = (value - min) / (float) Math.max(1, max - min);
 		float shownFill = animTo("sf" + id, Math.max(0f, Math.min(1f, target)));
 		int fill = Math.round(shownFill * bw);
-		rrectGrad(bx, by, Math.max(4, fill), 4, 2, Theme.mix(Theme.accent(), 0xFFFFFFFF, 0.18f), Theme.accent());
-		int kr = 5;
-		if (hv > 0.02f) circle(bx + fill, by + 2, kr + 3, Theme.fade(Theme.accent(), 0.28f * hv));
+		rrect(bx, by, Math.max(4, fill), 4, 2, Theme.accent());
+		int kr = 5 + Math.round(hv);
 		circle(bx + fill, by + 2, kr, 0xFFFFFFFF);
 		hit(id, r[0], r[1] + 10, r[2], 14, null, null, m -> {
 			int nv = min + Math.round((m - bx) * (max - min) / (float) bw);
@@ -841,17 +961,15 @@ public final class Ui {
 		sliderShown(r, name, min, max, value, String.valueOf(value), set);
 	}
 
+	/** A full-width action button (glass; the accent shows on hover). */
 	public void button(int[] r, String label, Runnable action) {
 		boolean hov = over(r[0], r[1], r[2], H);
 		float a = anim("b" + label, hov);
 		float p = anim("bp" + label, held(r[0], r[1], r[2], H));
 		int yy = r[1] + Math.round(p);
-		int accent = Theme.accent();
-		int top = Theme.mix(Theme.mix(Theme.CARD_HOVER, accent, 0.30f), Theme.mix(Theme.CARD_HOVER, accent, 0.58f), a);
-		int bot = Theme.mix(Theme.mix(Theme.CARD, accent, 0.20f), Theme.mix(Theme.CARD, accent, 0.44f), a);
-		rrectGrad(r[0], yy, r[2], H, 6, top, bot);
-		ring(r[0], yy, r[2], H, 6, Theme.fade(accent, 0.45f + 0.4f * a));
-		center(label, r[0] + r[2] / 2, yy + 8, 0xFFFFFFFF);
+		rrect(r[0], yy, r[2], H, 8, white(0.07f + 0.06f * a));
+		if (a > 0.05f) ring(r[0], yy, r[2], H, 8, white(0.16f * a));
+		center(label, r[0] + r[2] / 2, yy + 8, Theme.mix(0xFFDADAE4, 0xFFFFFFFF, a));
 		click("b" + label, r[0], r[1], r[2], H, action);
 	}
 
@@ -869,7 +987,7 @@ public final class Ui {
 		final int R = 42, boxH = 94;
 		int x = f.x(), w = f.width();
 		int top = f.reserve(boxH + 6);
-		panel(x, top, w, boxH, 6, Theme.CARD, Theme.STROKE);
+		inset(x, top, w, boxH, 8, 0f);
 
 		float[] hsv = hsvState.computeIfAbsent(id, k -> {
 			float[] a = new float[3];
@@ -991,13 +1109,11 @@ public final class Ui {
 
 		public void section(String title) {
 			flush();
-			y += 4;
-			String t = title.toUpperCase();
-			ui.circle(x + 3, y + 4, 2, Theme.accent());
-			ui.spaced(t, x + 10, y, Theme.DIM, 1);
-			int lx = x + 10 + ui.spacedWidth(t, 1) + 8;
-			ui.rect(lx, y + 4, Math.max(0, x + w - lx), 1, Theme.fade(Theme.STROKE, 0.85f));
-			y += 16;
+			y += 5;
+			ui.headText(title, x + 2, y, Theme.TEXT);
+			int lx = x + 2 + ui.headWidth(title) + 10;
+			ui.rect(lx, y + 5, Math.max(0, x + w - lx), 1, Ui.white(0.10f));
+			y += 17;
 		}
 
 		public void note(String s) {

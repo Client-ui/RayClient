@@ -47,7 +47,7 @@ public final class WaypointMarkers {
 			ClientFont.draw(ctx, tr, name, x - ClientFont.width(tr, name) / 2, y - 17, 0xFFFFFFFF, true);
 			if (cfg.waypointShowDist) {
 				String d = (int) dist + "m";
-				ClientFont.draw(ctx, tr, d, x - ClientFont.width(tr, d) / 2, y + 7, 0xFFD0D6E4, true);
+				ClientFont.draw(ctx, tr, d, x - ClientFont.width(tr, d) / 2, y + 7, 0xFFD6D6DE, true);
 			}
 		}
 	}

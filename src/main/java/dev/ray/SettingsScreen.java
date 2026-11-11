@@ -46,7 +46,7 @@ public abstract class SettingsScreen extends Screen {
 		}
 		in.setSetter(set);
 		boolean hov = ui.over(r[0], r[1], r[2], Ui.H);
-		ui.panel(r[0], r[1], r[2], Ui.H, 6, hov ? Theme.CARD_HOVER : Theme.CARD, Theme.STROKE);
+		ui.inset(r[0], r[1], r[2], Ui.H, 8, hov ? 1f : 0f);
 		ui.text(ui.fit(label, r[2] - 76), r[0] + 8, r[1] + 8, Theme.TEXT);
 		in.draw(ui, r[0] + r[2] - 64, r[1] + 4, 56, Ui.H - 8, current);
 	}
@@ -102,17 +102,17 @@ public abstract class SettingsScreen extends Screen {
 		// header: back + title (+ reset)
 		boolean backHov = ui.over(px + 12, py + 11, 54, 22);
 		float bv = ui.anim("backbtn", backHov);
-		ui.rrect(px + 12, py + 11, 54, 22, 7, Theme.mix(0xFF15181E, 0xFF1F232B, bv));
-		ui.ring(px + 12, py + 11, 54, 22, 7, Theme.mix(Theme.STROKE, Theme.accent(), bv * 0.7f));
+		ui.rrect(px + 12, py + 11, 54, 22, 11, Theme.mix(Ui.white(0.06f), Ui.white(0.12f), bv));
+		ui.rimGlass(px + 12, py + 11, 54, 22, 11, 0.24f + 0.16f * bv, 0.07f);
 		ui.backIcon(px + 20 - Math.round(bv * 2f), py + 18, Theme.mix(Theme.DIM, 0xFFFFFFFF, bv));
-		ui.spaced("BACK", px + 31, py + 18, Theme.mix(Theme.DIM, 0xFFFFFFFF, bv), 1);
+		ui.text("Back", px + 31, py + 18, Theme.mix(Theme.DIM, 0xFFFFFFFF, bv));
 		ui.click("back", px + 12, py + 11, 54, 22, this::close);
-		ui.textShadow(heading, px + 78, py + 18, 0xFFFFFFFF);
-		ui.rrect(px + 78, py + 30, Math.min(40, ui.w(heading)), 2, 1, Theme.fade(accent, 0.9f));
+		ui.headText(heading, px + 78, py + 17, 0xFFFFFFFF);
+		ui.gradBar(px + 78, py + 30, Math.min(40, ui.headWidth(heading)), 2, accent, Theme.accent2());
 		if (hasReset()) {
-			ui.labelButton(px + pw - 86, py + 11, 74, 22, "Reset", 0xFF7F1D1D, this::onReset);
+			ui.labelButton(px + pw - 86, py + 11, 74, 22, "Reset", Theme.BAD, this::onReset);
 		}
-		ui.rect(px + 12, py + 40, pw - 24, 1, Theme.fade(Theme.STROKE, 0.9f));
+		ui.rect(px + 12, py + 40, pw - 24, 1, Ui.white(0.09f));
 
 		// scrolling body
 		int vx = px + 16, vy = py + 48, vw = pw - 40, vh = ph - 48 - 26;

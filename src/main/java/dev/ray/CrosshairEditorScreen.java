@@ -63,19 +63,16 @@ public class CrosshairEditorScreen extends Screen {
 		boolean hov = ui.over(x, y, w, 20);
 		float hv = ui.anim("sth" + label, hov);
 		float k = ui.anim("stk" + label, on);
-		ui.rrect(x, y, w, 20, 6, Theme.mix(Theme.CARD, Theme.CARD_HOVER, hv));
-		ui.ring(x, y, w, 20, 6, Theme.mix(Theme.STROKE, Theme.accent(), hv * 0.45f));
-		ui.text(ui.fit(label, w - 44), x + 8, y + 6, Theme.TEXT);
-		int tx = x + w - 32, ty = y + 4;
-		ui.rrect(tx, ty, 24, 12, 6, Theme.mix(0xFF2A303B, Theme.accent(), k));
-		ui.rrect(tx + 2 + Math.round(k * 12f), ty + 2, 8, 8, 4, Theme.mix(0xFFB4BBC9, 0xFFFFFFFF, k));
+		ui.inset(x, y, w, 20, 8, hv);
+		ui.text(ui.fit(label, w - 54), x + 9, y + 6, Theme.TEXT);
+		ui.switchControl(x + w - 42, y + 1, k);
 		ui.click("tg" + label, x, y, w, 20, flip);
 	}
 
 	private void smallButton(int x, int y, int w, String label, Runnable action) {
 		boolean hov = ui.over(x, y, w, 20);
 		float hv = ui.anim("sb" + label, hov);
-		ui.rrect(x, y, w, 20, 6, Theme.mix(Theme.CARD, Theme.CARD_HOVER, hv));
+		ui.rrect(x, y, w, 20, 8, Ui.white(0.045f + 0.05f * hv));
 		ui.ring(x, y, w, 20, 6, Theme.mix(Theme.STROKE, Theme.accent(), hv * 0.6f));
 		int tw = ui.w(label);
 		if (tw <= w - 4) {
@@ -109,13 +106,13 @@ public class CrosshairEditorScreen extends Screen {
 		// header
 		boolean backHov = ui.over(px + 12, py + 11, 54, 22);
 		float bv = ui.anim("cbback", backHov);
-		ui.rrect(px + 12, py + 11, 54, 22, 7, Theme.mix(0xFF15181E, 0xFF1F232B, bv));
-		ui.ring(px + 12, py + 11, 54, 22, 7, Theme.mix(Theme.STROKE, accent, bv * 0.7f));
+		ui.rrect(px + 12, py + 11, 54, 22, 11, Theme.mix(Ui.white(0.06f), Ui.white(0.12f), bv));
+		ui.rimGlass(px + 12, py + 11, 54, 22, 11, 0.24f + 0.16f * bv, 0.07f);
 		ui.backIcon(px + 20 - Math.round(bv * 2f), py + 18, Theme.mix(Theme.DIM, 0xFFFFFFFF, bv));
-		ui.spaced("BACK", px + 31, py + 18, Theme.mix(Theme.DIM, 0xFFFFFFFF, bv), 1);
+		ui.text("Back", px + 31, py + 18, Theme.mix(Theme.DIM, 0xFFFFFFFF, bv));
 		ui.click("back", px + 12, py + 11, 54, 22, this::close);
-		ui.textShadow("Crosshair Editor", px + 78, py + 18, 0xFFFFFFFF);
-		ui.rect(px + 12, py + 40, pw - 24, 1, Theme.fade(Theme.STROKE, 0.9f));
+		ui.headText("Crosshair Editor", px + 78, py + 17, 0xFFFFFFFF);
+		ui.rect(px + 12, py + 40, pw - 24, 1, Ui.white(0.09f));
 
 		// tabs
 		int tx = px + 16;
@@ -128,14 +125,14 @@ public class CrosshairEditorScreen extends Screen {
 		String art = art();
 		int col = CrosshairArt.color(colorIdx());
 		int gridPx = CrosshairArt.N * cell;
-		ui.rrect(gx - 4, gy - 4, gridPx + 8, gridPx + 8, 7, 0xFF090B10);
-		ui.ring(gx - 4, gy - 4, gridPx + 8, gridPx + 8, 7, Theme.STROKE);
+		ui.rrect(gx - 4, gy - 4, gridPx + 8, gridPx + 8, 9, 0xCC050507);
+		ui.rimGlass(gx - 4, gy - 4, gridPx + 8, gridPx + 8, 9, 0.20f, 0.06f);
 		int hoverCell = cellAt(mx, my);
 		for (int r = 0; r < CrosshairArt.N; r++) {
 			for (int c = 0; c < CrosshairArt.N; c++) {
 				int x = gx + c * cell, y = gy + r * cell;
 				boolean lit = CrosshairArt.get(art, r, c);
-				int base = ((r + c) & 1) == 0 ? 0xFF161A22 : 0xFF12161D;
+				int base = ((r + c) & 1) == 0 ? 0xFF17171D : 0xFF111116;
 				ctx.fill(x + 1, y + 1, x + cell - 1, y + cell - 1, lit ? col : base);
 				if (hoverCell == r * CrosshairArt.N + c) ui.border(x, y, cell, cell, 0xBBFFFFFF);
 			}
@@ -146,7 +143,7 @@ public class CrosshairEditorScreen extends Screen {
 
 		// ---- right column ----
 		int rx = gx + CrosshairArt.N * cell + 24, rw = px + pw - 18 - rx;
-		ui.spaced("COLOR", rx, py + 50, Theme.MUTE, 2);
+		ui.headText("Color", rx, py + 49, Theme.TEXT);
 		int step = Math.min(22, rw / CrosshairArt.colorCount()), swSize = step - 4;
 		for (int i = 0; i < CrosshairArt.colorCount(); i++) {
 			final int idx = i;
@@ -160,8 +157,8 @@ public class CrosshairEditorScreen extends Screen {
 
 		// preview (dark | light background) - the blend is real here, so you can see what it does
 		int pvy = py + 90, pvh = 56;
-		ctx.fill(rx, pvy, rx + rw / 2, pvy + pvh, 0xFF1B2130);
-		ctx.fill(rx + rw / 2, pvy, rx + rw, pvy + pvh, 0xFFC4CCDB);
+		ctx.fill(rx, pvy, rx + rw / 2, pvy + pvh, 0xFF17171D);
+		ctx.fill(rx + rw / 2, pvy, rx + rw, pvy + pvh, 0xFFC9C9D2);
 		ui.ring(rx - 1, pvy - 1, rw + 2, pvh + 2, 3, Theme.STROKE_HI);
 		CrosshairArt.draw(ctx, art, rx + rw / 2, pvy + pvh / 2, cfg.crosshairScale, col, cfg.crosshairOutline, cfg.crosshairVanillaBlend);
 

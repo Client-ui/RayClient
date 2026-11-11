@@ -21,8 +21,7 @@ import java.util.Map;
  *  - Client Font is applied to the client's own text only (Ray menus and HUD modules) by {@link ClientFont}, which gives
  *    that text an explicit font. Explicit fonts are not touched by the Minecraft Font swap, so the two never interfere.
  *
- * Six fonts ship with the mod: a copy of Minecraft's normal font ("Minecraft default", used by the Client Font so client
- * text can stay as it is while Minecraft changes) and five others. A seventh slot, "My own font", comes from a .ttf/.otf
+ * Six fonts ship with the mod: a copy of Minecraft's normal font ("Minecraft default") and five others (Inter is the default). A seventh slot, "My own font", comes from a .ttf/.otf
  * you drop into the ray-fonts config folder; Minecraft only loads fonts from resource packs, so {@link #preparePack}
  * turns that file into a small pack ("Ray Fonts") that you enable once in Options > Resource Packs.
  *
@@ -31,13 +30,13 @@ import java.util.Map;
  */
 public final class FontOverride {
 	/** Index 0 is a copy of Minecraft's own font; 6 is the one you add yourself. */
-	public static final String[] NAMES = {"Minecraft default", "Pixelify Sans", "Outfit", "JetBrains Mono", "Tektur", "Work Sans", "My own font"};
-	private static final String[] IDS = {"vanilla", "pixelify", "outfit", "jetbrains", "tektur", "worksans", "custom"};
+	public static final String[] NAMES = {"Minecraft default", "Inter", "Outfit", "JetBrains Mono", "Tektur", "Work Sans", "My own font"};
+	private static final String[] IDS = {"vanilla", "inter", "outfit", "jetbrains", "tektur", "worksans", "custom"};
 
 	private static final Identifier DEFAULT = Identifier.of("minecraft", "default");
 
-	/** The one font every Ray menu and HUD module is drawn in: Outfit (index 2 of {@link #NAMES}). */
-	private static final int CLIENT_FONT = 2;
+	/** The one font every Ray menu and HUD module is drawn in: Inter (index 1 of {@link #NAMES}). */
+	private static final int CLIENT_FONT = 1;
 
 	/** Set by the FontManager mixin when Minecraft creates its font manager. */
 	public static Object manager;
@@ -89,14 +88,28 @@ public final class FontOverride {
 	private static Identifier smoothCached = null;
 	private static long smoothAt = -1L;
 
-	/** The smooth font (Outfit) used where text must never look pixelated, or null if it is not loaded. */
+	/** The smooth font (Inter) used where text must never look pixelated, or null if it is not loaded. */
 	public static Identifier smoothId() {
 		long now = System.currentTimeMillis();
 		if (smoothAt < 0L || now - smoothAt > 500L) {
 			smoothAt = now;
-			smoothCached = loaded(2) ? FONT_IDS[2] : null;
+			smoothCached = loaded(CLIENT_FONT) ? FONT_IDS[CLIENT_FONT] : null;
 		}
 		return smoothCached;
+	}
+
+	private static final Identifier HEAD_ID = Identifier.of("ray", "interbold");
+	private static Identifier headCached = null;
+	private static long headAt = -1L;
+
+	/** The bold face used for headings (Inter SemiBold), or null if it is not loaded. */
+	public static Identifier headId() {
+		long now = System.currentTimeMillis();
+		if (headAt < 0L || now - headAt > 500L) {
+			headAt = now;
+			headCached = manager instanceof RayFontAccess a && a.ray$has(HEAD_ID) ? HEAD_ID : null;
+		}
+		return headCached;
 	}
 
 	/** Applies the Minecraft Font setting. Cheap; safe to call every tick. */

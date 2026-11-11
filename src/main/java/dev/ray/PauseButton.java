@@ -45,10 +45,12 @@ public final class PauseButton {
 				int accent = Theme.accent();
 				int w = hr - hl, h = 30, hy = headerTop - h - 8;
 				if (hy < 4) return;
-				UI.surface(hl, hy, w, h, 8);
-				Brand.bolt(ctx, hl + 16, hy + 4, 1, 1.0f, System.currentTimeMillis());
-				UI.spaced("RAY CLIENT", hl + 34, hy + 6, 0xFFFFFFFF, 2);
-				UI.text("Paused  -  v" + RayClient.VERSION, hl + 34, hy + 17, Theme.DIM);
+				UI.surface(hl, hy, w, h, 10);
+				int lh = h - 8;
+				Logo.draw(ctx, hl + 10, hy + 4, lh, 1f);
+				int tx = hl + 10 + Logo.width(lh) + 8;
+				UI.headText("Ray Client", tx, hy + 6, 0xFFFFFFFF);
+				UI.text("Paused  -  v" + RayClient.VERSION, tx, hy + 17, Theme.DIM);
 				String hint = "Right Shift: HUD editor";
 				UI.right(hint, hr - 10, hy + 11, Theme.MUTE);
 			});

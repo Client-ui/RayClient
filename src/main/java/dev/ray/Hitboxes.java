@@ -11,7 +11,7 @@ import net.minecraft.util.math.Vec3d;
 
 /**
  * Custom hitboxes: draws a box around other players (or living entities) in your own colour, with a different
- * colour while your crosshair is on them. Vanilla's red eye-height line and blue look-direction line are optional.
+ * colour while your crosshair is on them. Vanilla's red eye-height line and the look-direction line are optional.
  *
  * Fair-play rules built in: only entities you can actually see are drawn (an eye-to-eye line-of-sight check, so
  * nothing shows through walls) and invisible entities are skipped.
@@ -96,10 +96,10 @@ public final class Hitboxes {
 					}
 				}
 			}
-			if (cfg.hitboxLook) { // vanilla's blue line along where they look
+			if (cfg.hitboxLook) { // the line along where they look (in the client accent)
 				Vec3d look = e.getRotationVec(tp);
 				if (proj.projectSegment(p.x, eyeY, p.z, p.x + look.x * 2.0, eyeY + look.y * 2.0, p.z + look.z * 2.0, SEG)) {
-					ScreenLines.line(ctx, SEG[0], SEG[1], SEG[2], SEG[3], thick, gs, (alpha << 24) | 0x4060FF);
+					ScreenLines.line(ctx, SEG[0], SEG[1], SEG[2], SEG[3], thick, gs, (alpha << 24) | (Theme.accent() & 0xFFFFFF));
 				}
 			}
 		}

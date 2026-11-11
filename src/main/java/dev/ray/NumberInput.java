@@ -71,7 +71,7 @@ public final class NumberInput {
 		bw = w;
 		bh = h;
 		boolean focused = field.isFocused();
-		ui.panel(x, y, w, h, 3, 0xFF0D1018, focused ? Theme.accent() : (ui.over(x, y, w, h) ? Theme.DIM : Theme.STROKE));
+		ui.panel(x, y, w, h, 3, 0xFF0E0E12, focused ? Theme.accent() : (ui.over(x, y, w, h) ? Theme.DIM : Theme.STROKE));
 		if (!focused) {
 			String t = format(current);
 			if (!field.getText().equals(t)) {

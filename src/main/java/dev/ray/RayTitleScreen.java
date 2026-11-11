@@ -10,36 +10,26 @@ import net.minecraft.item.Items;
 import net.minecraft.text.Text;
 
 /**
- * Ray Client's main menu.
+ * Ray Client's main menu: "Orbit and Dock".
  *
- *   top bar     logo on the left, Options and Quit as round buttons on the right
- *   hero        "Welcome back, <you>", a big glowing Singleplayer button, Multiplayer and Mods underneath
- *   status card your client at a glance (modules on, sky, lyrics), quick switches, and a rotating tip
+ *   orbit   the logo sits in two faint, slowly turning orbits with small satellites, the way the logo's own ring does
+ *   dock    the actions live in a glass dock at the bottom; icons swell toward the cursor and name themselves on hover
  *
- * The lights in the background drift and lean slightly toward your cursor. Everything slides in one piece after another.
- * It replaces the vanilla title screen (see MinecraftClientMixin) and can be switched off in the Client category.
+ * Nothing else competes for attention: no cards, no tips, no status panels (those live in the Mods screen). Update
+ * news is a quiet line at the bottom left. It replaces the vanilla title screen (see MinecraftClientMixin) and can be
+ * switched off in the Client category.
  */
 public class RayTitleScreen extends Screen {
 	private static final String MC_VERSION = "1.21.11";
-	private static final String[] TIPS = {
-		"Press right-shift in a world to open the HUD editor.",
-		"Custom Sky has 26 pre-made skies. Try Neon City.",
-		"Lyric Sync shows your Spotify lyrics as floating words.",
-		"Tap the heart on a module tile to add it to your favourites.",
-		"Menu Size in Settings makes the whole menu bigger or smaller.",
-		"Profiles save your whole setup so you can switch in one click.",
-		"Drag HUD modules around with the HUD Editor.",
-	};
+
+	/** One dock entry: an item icon, or (when icon is null) a drawn glyph: 0 = sliders, 1 = close. */
+	private record Entry(String label, ItemStack icon, int glyph, Runnable action) {}
 
 	private final Ui ui = new Ui();
 	private final long born = System.currentTimeMillis();
-	private final ItemStack eye = new ItemStack(Items.ENDER_EYE);
-	private final ItemStack star = new ItemStack(Items.NETHER_STAR);
-	private final ItemStack grass = new ItemStack(Items.GRASS_BLOCK);
 	private float parX = 0f, parY = 0f;
-	// cached once per second: counting every module each frame is wasteful
 	private long statAt = 0L;
-	private int modulesOn = 0, modulesAll = 0;
+	private int modsOn = 0;
 
 	public RayTitleScreen() {
 		super(Text.literal("Ray Client"));
@@ -55,98 +45,111 @@ public class RayTitleScreen extends Screen {
 		return false;
 	}
 
-	// ---------- pieces ----------
+	// ---------- orbits ----------
 
-	/** The primary button: a lit accent surface with an icon plate, a big label and an arrow that nudges on hover. */
-	private void hero(int x, int y, int w, int h, String label, String sub, int index, Runnable action) {
-		float ap = ui.appear("hero" + label, 80 + index * 90);
+	/** One faint elliptical orbit drawn as dots, with a satellite that leaves a short fading trail. */
+	private void orbit(DrawContext ctx, float cx, float cy, float a, float b, float tilt, float angle, float speedDir, float alpha, float time) {
+		double ct = Math.cos(tilt), st = Math.sin(tilt);
+		final int dots = 110;
+		for (int i = 0; i < dots; i++) {
+			double th = i * (Math.PI * 2 / dots);
+			double ex = a * Math.cos(th), ey = b * Math.sin(th);
+			int px = Math.round((float) (cx + ex * ct - ey * st)), py = Math.round((float) (cy + ex * st + ey * ct));
+			float depth = 0.55f + 0.45f * (float) Math.sin(th); // the near side (bottom) is a little brighter
+			ctx.fill(px, py, px + 1, py + 1, Theme.fade(0xFFFFFFFF, 0.17f * depth * alpha));
+		}
+		// satellite and trail
+		for (int k = 0; k < 14; k++) {
+			double th = angle - speedDir * k * 0.045;
+			double ex = a * Math.cos(th), ey = b * Math.sin(th);
+			int px = Math.round((float) (cx + ex * ct - ey * st)), py = Math.round((float) (cy + ex * st + ey * ct));
+			float depth = 0.6f + 0.4f * (float) Math.sin(th);
+			float fade = (1f - k / 14f);
+			float s = k == 0 ? 1f : 0.5f * fade * fade;
+			int c = k == 0 ? 0xFFFFFFFF : Theme.accent();
+			ctx.fill(px, py, px + (k == 0 ? 2 : 1), py + (k == 0 ? 2 : 1), Theme.fade(c, Math.min(1f, s * depth * alpha)));
+		}
+	}
+
+	// ---------- dock ----------
+
+	private void dock(DrawContext ctx, int vw, int vh, Entry[] entries, int dividerBefore) {
+		final int base = 28, gap = 12, divW = 16, padX = 16, pillH = 46;
+		float ap = ui.appear("dock", 350);
 		if (ap < 0.02f) return;
-		x -= Math.round((1f - ap) * 18f);
-		boolean hov = ui.over(x, y, w, h);
-		float hv = ui.anim("hero" + label, hov);
-		float pr = ui.anim("herop" + label, ui.held(x, y, w, h));
-		y += Math.round(pr);
-		int accent = Theme.accent();
-		long now = System.currentTimeMillis();
+		int pillBottom = vh - 22 + Math.round((1f - ap) * 40f);
+		int iconBottom = pillBottom - 9;
 
-		ui.glow(x, y, w, h, 10, accent, (0.45f + 0.55f * hv) * ap);
-		ui.shadow(x, y, w, h, 10);
-		int top = Theme.mix(Theme.mix(accent, 0xFFFFFFFF, 0.10f), Theme.mix(accent, 0xFFFFFFFF, 0.22f), hv);
-		int bot = Theme.mix(Theme.mix(accent, 0xFF000000, 0.42f), Theme.mix(accent, 0xFF000000, 0.26f), hv);
-		ui.rrectGrad(x, y, w, h, 10, Theme.fade(top, ap), Theme.fade(bot, ap));
-		ui.ring(x, y, w, h, 10, Theme.fade(Theme.mix(accent, 0xFFFFFFFF, 0.45f), 0.7f * ap));
-		ui.rect(x + 10, y + 1, w - 20, 1, Theme.fade(0xFFFFFFFF, 0.30f * ap));
+		// how much each icon swells: strongest under the cursor, falling off smoothly with distance
+		boolean near = ui.my >= pillBottom - pillH - 70 && ui.my <= vh + 10 && RayConfig.get().uiAnimations;
+		int n = entries.length;
+		float[] size = new float[n];
+		float flat = n * (base + gap) - gap + divW;
+		float x0 = (vw - flat) / 2f;
+		float cur = x0;
+		int hovered = -1;
+		float best = 1e9f;
+		for (int i = 0; i < n; i++) {
+			if (i == dividerBefore) cur += divW;
+			float center = cur + base / 2f;
+			float d = (ui.mx - center) / 46f;
+			float target = near ? 1f + 0.62f * (float) Math.exp(-d * d) : 1f;
+			size[i] = base * ui.animTo("dk" + i, target);
+			if (near && Math.abs(ui.mx - center) < best) {
+				best = Math.abs(ui.mx - center);
+				hovered = i;
+			}
+			cur += base + gap;
+		}
+		float total = -gap + divW;
+		for (int i = 0; i < n; i++) total += size[i] + gap;
+		int pillW = Math.round(total) + padX * 2;
+		int pillX = Math.round((vw - total) / 2f) - padX;
+		ui.rrect(pillX, pillBottom - pillH, pillW, pillH, 16, Theme.fade(0xFFFFFFFF, 0.065f * ap));
+		ui.ring(pillX, pillBottom - pillH, pillW, pillH, 16, Theme.fade(0xFFFFFFFF, 0.10f * ap));
 
-		int tile = h - 14;
-		ui.rrect(x + 7, y + 7, tile, tile, 8, Theme.fade(0x40000000, ap));
-		ui.ring(x + 7, y + 7, tile, tile, 8, Theme.fade(0x33FFFFFF, ap));
-		if (ap > 0.4f) {
-			float bob = hv * (float) Math.sin(now / 200.0) * 1.0f;
+		float x = pillX + padX;
+		for (int i = 0; i < n; i++) {
+			if (i == dividerBefore) {
+				ui.rect(Math.round(x + divW / 2f - 1), iconBottom - 24, 1, 22, Theme.fade(0xFFFFFFFF, 0.14f * ap));
+				x += divW;
+			}
+			Entry e = entries[i];
+			float s = size[i];
+			int top = Math.round(iconBottom - s);
+			int ix = Math.round(x);
+			boolean hov = i == hovered && ui.over(ix, top - 6, Math.round(s), Math.round(s) + 12 + 12);
+			float k = s / 16f;
 			ui.ctx.getMatrices().pushMatrix();
-			ui.ctx.getMatrices().translate(x + 7 + tile / 2f - 12f, y + 7 + tile / 2f - 12f + bob);
-			ui.ctx.getMatrices().scale(1.5f, 1.5f);
-			ui.ctx.drawItem(grass, 0, 0);
+			ui.ctx.getMatrices().translate((float) ix, (float) top);
+			if (e.icon() != null) {
+				ui.ctx.getMatrices().scale(k, k);
+				ui.ctx.drawItem(e.icon(), 0, 0);
+			} else {
+				ui.ctx.getMatrices().scale(k / 1.75f, k / 1.75f);
+				ui.rrect(0, 0, 28, 28, 8, Theme.fade(0xFFFFFFFF, 0.10f));
+				if (e.glyph() == 1) ui.closeIcon(10, 10, Theme.DIM);
+				else ui.slidersIcon(8, 9, Theme.DIM);
+			}
 			ui.ctx.getMatrices().popMatrix();
+			ui.hit("dock" + e.label(), ix, top - 6, Math.round(s), Math.round(s) + 14, e.action(), null, null);
+			x += s + gap;
 		}
-		int tx = x + 7 + tile + 11;
-		ui.scaledText(label, tx, y + h / 2 - 11, 1.25f, Theme.fade(0xFFFFFFFF, ap), true);
-		ui.text(sub, tx, y + h / 2 + 3, Theme.fade(0xFFEAF0FF, 0.82f * ap));
-		int ax = x + w - 22 + Math.round(hv * 4f);
-		ui.pix(new String[]{"#..", "##.", "###", "##.", "#.."}, ax, y + h / 2 - 5, 2, Theme.fade(0xFFFFFFFF, ap));
-		ui.hit("hero" + label, x, y - Math.round(pr), w, h, action, null, null);
-	}
 
-	/** A secondary button: glass surface with an icon plate; the plate and border take the accent on hover. */
-	private void glass(int x, int y, int w, int h, String label, ItemStack icon, boolean accented, int index, Runnable action) {
-		float ap = ui.appear("glass" + label, 140 + index * 90);
-		if (ap < 0.02f) return;
-		x -= Math.round((1f - ap) * 18f);
-		boolean hov = ui.over(x, y, w, h);
-		float hv = ui.anim("glass" + label, hov);
-		int accent = Theme.accent();
-		if (hv > 0.02f) ui.glow(x, y, w, h, 8, accent, hv * 0.6f);
-		ui.rrectGrad(x, y, w, h, 8, Theme.fade(Theme.mix(0xFF1B1E25, 0xFF252A33, hv), ap), Theme.fade(Theme.mix(0xFF13161B, 0xFF1B1F26, hv), ap));
-		ui.ring(x, y, w, h, 8, Theme.fade(Theme.mix(Theme.STROKE, accent, Math.max(hv * 0.85f, accented ? 0.35f : 0f)), ap));
-		ui.plate(x + 4, y + 4, h - 8, accent, Math.max(hv, accented ? 0.5f : 0.1f));
-		if (ap > 0.4f) ui.ctx.drawItem(icon, x + 4 + (h - 8 - 16) / 2, y + 4 + (h - 8 - 16) / 2);
-		ui.spaced(label, x + h + 3, y + h / 2 - 4, Theme.fade(Theme.mix(0xFFD5DAE6, 0xFFFFFFFF, hv), ap), 1);
-		ui.chevron(x + w - 12 + Math.round(hv * 2f), y + h / 2 - 2, Theme.fade(Theme.mix(Theme.MUTE, 0xFFFFFFFF, hv), ap));
-		ui.hit("glass" + label, x, y, w, h, action, null, null);
-	}
-
-	/** One row of the stats card: a status dot, the label, and the value on the right. Returns the next row's y. */
-	private int statLine(int rx, int ry, int rw, String label, String value, boolean good, float ap) {
-		ui.circle(rx + 3, ry + 4, 2, Theme.fade(good ? Theme.TILE_ON : 0xFF4A5166, ap));
-		ui.text(label, rx + 12, ry, Theme.fade(Theme.DIM, ap));
-		ui.right(ui.fit(value, rw - 12 - ui.w(label) - 8), rx + rw, ry, Theme.fade(Theme.TEXT, ap));
-		return ry + 16;
-	}
-
-	/** Round icon button. kind: 0 = settings gear, 1 = close (danger), 2 = GitHub / link. */
-	private void roundButton(int cx, int cy, int r, int id, int kind, Runnable action) {
-		boolean hov = ui.over(cx - r, cy - r, r * 2, r * 2);
-		float hv = ui.anim("rb" + id, hov);
-		boolean danger = kind == 1;
-		int accent = danger ? 0xFFE0384A : Theme.accent();
-		if (hv > 0.02f) ui.glow(cx - r, cy - r, r * 2, r * 2, r, accent, hv * 0.6f);
-		ui.circle(cx, cy, r, Theme.mix(0xFF181B22, Theme.mix(0xFF181B22, accent, 0.40f), hv));
-		ui.ring(cx - r, cy - r, r * 2, r * 2, r, Theme.mix(Theme.STROKE, accent, hv));
-		int glyph = Theme.mix(danger ? 0xFFFF9AA2 : Theme.DIM, 0xFFFFFFFF, hv);
-		if (kind == 1) ui.closeIcon(cx - 3, cy - 3, glyph);
-		else if (kind == 0) ui.slidersIcon(cx - 5, cy - 4, glyph);
-		else {
-			ui.pix(new String[]{"..#", ".#.", "#..", ".#.", "..#"}, cx - 6, cy - 5, 2, glyph);
-			ui.pix(new String[]{"#..", ".#.", "..#", ".#.", "#.."}, cx + 1, cy - 5, 2, glyph);
+		// the name of the icon under the cursor floats above it
+		if (hovered >= 0) {
+			Entry e = entries[hovered];
+			float tagAp = ui.anim("docktag", true);
+			float xx = pillX + padX;
+			for (int i = 0; i < hovered; i++) xx += size[i] + gap + (i + 1 == dividerBefore ? divW : 0);
+			if (hovered == dividerBefore) xx += divW;
+			int cx = Math.round(xx + size[hovered] / 2f);
+			int tw = ui.w(e.label()) + 18;
+			int ty = Math.round(iconBottom - size[hovered]) - 24;
+			ui.rrect(cx - tw / 2, ty, tw, 17, 8, Theme.fade(0xFF111116, 0.96f * ap * tagAp));
+			ui.ring(cx - tw / 2, ty, tw, 17, 8, Theme.fade(0xFFFFFFFF, 0.14f * ap * tagAp));
+			ui.center(e.label(), cx, ty + 5, Theme.fade(0xFFFFFFFF, ap * tagAp));
 		}
-		ui.hit("rb" + id, cx - r, cy - r, r * 2, r * 2, action, null, null);
-	}
-
-	/** One line of the status card with an on/off dot; returns the y for the next line. */
-	private int statRow(int x, int y, int w, String key, String value, boolean good, float alpha) {
-		ui.circle(x + 2, y + 4, 2, Theme.fade(good ? Theme.GOOD : 0xFF4A5268, alpha));
-		ui.text(key, x + 9, y, Theme.fade(Theme.MUTE, alpha));
-		ui.right(ui.fit(value, Math.max(20, w - ui.w(key) - 18)), x + w, y, Theme.fade(good ? 0xFFFFFFFF : Theme.DIM, alpha));
-		return y + 13;
 	}
 
 	// ---------- frame ----------
@@ -156,212 +159,127 @@ public class RayTitleScreen extends Screen {
 		long now = System.currentTimeMillis();
 		RayConfig cfg = RayConfig.get();
 
-		// the background fills the real window and leans a little toward the cursor (eased so it never jumps)
 		float tx = (mouseX / (float) Math.max(1, width) - 0.5f) * 2f, ty = (mouseY / (float) Math.max(1, height) - 0.5f) * 2f;
-		parX += (tx - parX) * 0.12f;
-		parY += (ty - parY) * 0.12f;
-		Brand.backdrop(ctx, width, height, now, 1.0f, cfg.uiAnimations ? parX : 0f, cfg.uiAnimations ? parY : 0f);
+		parX += (tx - parX) * 0.08f;
+		parY += (ty - parY) * 0.08f;
+		float px = cfg.uiAnimations ? parX : 0f, py = cfg.uiAnimations ? parY : 0f;
+		Brand.backdrop(ctx, width, height, now, 1.0f, px, py);
 
-		// everything else is laid out in a virtual screen scaled to fit the window, so the menu looks right at any GUI Scale
 		float sc = UiScale.fit(width, height, 560, 315, cfg.menuScale);
 		int vw = UiScale.view(width, sc), vh = UiScale.view(height, sc);
 		ctx.getMatrices().pushMatrix();
 		ctx.getMatrices().scale(sc, sc);
 		ui.begin(ctx, textRenderer, UiScale.mouse(mouseX, sc), UiScale.mouse(mouseY, sc));
-		float intro = Math.max(0f, Math.min(1f, (now - born) / 650f));
-
-		if (now - statAt > 1000L) {
-			statAt = now;
-			int on = 0, all = 0;
-			for (Features.Card c : Features.cards()) {
-				all++;
-				if (c.on.getAsBoolean()) on++;
-			}
-			modulesOn = on;
-			modulesAll = all;
-		}
 
 		int m = Math.max(10, Math.min(22, vw / 24));
-		boolean wide = vw >= 380;
+		float t = now / 1000f;
+		float intro = Theme.easeOutCubic(Math.min(1f, (now - born) / 900f));
+		float logoAp = Theme.easeOutCubic(Math.min(1f, (now - born) / 700f));
 
-		// ---- top bar ----
-		roundButton(vw - m - 9, m + 8, 9, 1, 1, () -> client.scheduleStop());
-		roundButton(vw - m - 9 - 24, m + 8, 9, 0, 0, () -> client.setScreen(new OptionsScreen(this, client.options)));
-		roundButton(vw - m - 9 - 48, m + 8, 9, 2, 2, () -> {
-			try {
-				net.minecraft.util.Util.getOperatingSystem().open(java.net.URI.create("https://github.com/" + Updater.REPO));
-			} catch (Throwable ignored) {
-			}
-		});
+		// ---- the logo and its orbits (everything is centred on the logo) ----
+		int logoH = Math.max(48, Math.min(92, vh / 3 - 8));
+		int cx = vw / 2, top = Math.max(m + 16, vh / 2 - logoH - 26) + Math.round((1f - logoAp) * 10f);
+		float ocx = cx + px * 6f, ocy = top + logoH / 2f + py * 3f;
+		float oa = Math.min(vw * 0.30f, 168f) * (0.9f + 0.1f * intro);
+		orbit(ctx, ocx, ocy, oa, oa * 0.27f, -0.28f, t * 0.55f, 1f, logoAp, t);
+		orbit(ctx, ocx, ocy, oa * 1.42f, oa * 0.40f, 0.16f, -t * 0.34f + 2f, -1f, logoAp * 0.8f, t);
+		Brand.logo(ctx, cx + Math.round(px * 3f), top, logoH, logoAp, now);
 
-		// ---- update banner (only when there is news) ----
+		// ---- name ----
+		int ny = top + logoH + 16;
+		String nm = "Ray Client";
+		float nsc = 1.6f;
+		int nw = Math.round(ui.headWidth(nm) * nsc);
+		ui.scaledHead(nm, cx - nw / 2, ny, nsc, Theme.fade(0xFFFFFFFF, logoAp));
+		int hour = java.time.LocalTime.now().getHour();
+		String part = hour < 5 ? "Good night" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+		String user = client.getSession() != null ? client.getSession().getUsername() : "";
+		if (now - statAt > 1000L) { // counting builds the module list, so do it once a second, not every frame
+			statAt = now;
+			int on = 0;
+			for (Features.Card c : Features.cards()) if (c.on.getAsBoolean()) on++;
+			modsOn = on;
+		}
+		ui.center(user.isEmpty() ? part : part + ", " + user, cx, ny + 21, Theme.fade(Theme.DIM, logoAp));
+		ui.center("Minecraft " + MC_VERSION + "  \u00b7  " + modsOn + (modsOn == 1 ? " module on" : " modules on"), cx, ny + 34, Theme.fade(Theme.MUTE, logoAp));
+
+		// ---- dock ----
+		Entry[] entries = {
+			new Entry("Singleplayer", new ItemStack(Items.GRASS_BLOCK), 0, () -> client.setScreen(new SelectWorldScreen(this))),
+			new Entry("Multiplayer", new ItemStack(Items.COMPASS), 0, () -> client.setScreen(new MultiplayerScreen(this))),
+			new Entry("Mods", new ItemStack(Items.NETHER_STAR), 0, () -> {
+				RayScreen.selectPage("MODS");
+				client.setScreen(new RayScreen(this));
+			}),
+			new Entry("Profiles", new ItemStack(Items.CHEST), 0, () -> {
+				RayScreen.selectPage("PROFILES");
+				client.setScreen(new RayScreen(this));
+			}),
+			new Entry("Options", null, 0, () -> client.setScreen(new OptionsScreen(this, client.options))),
+			new Entry("Quit", null, 1, () -> client.scheduleStop()),
+		};
+		dock(ctx, vw, vh, entries, 4);
+
+		// ---- update news: one quiet line at the top, and the check link at the bottom left ----
+		Updater.State us = Updater.state;
 		if (Updater.hasNews()) {
-			float uAp = ui.appear("updbanner", 400);
+			float uAp = ui.appear("updbanner", 500);
 			if (uAp > 0.02f) {
-				Updater.State us = Updater.state;
-				String msg = us == Updater.State.AVAILABLE ? "Update " + Updater.latest + " available"
+				String msg = us == Updater.State.AVAILABLE ? "Version " + Updater.latest + " is available"
 					: us == Updater.State.DOWNLOADING ? "Downloading " + Updater.latest + "  " + Updater.progress + "%"
 					: "Restart to finish updating to " + Updater.latest;
-				String btn = us == Updater.State.AVAILABLE ? (Updater.canInstall() ? "UPDATE" : "OPEN") : us == Updater.State.READY ? "RESTART" : null;
-				int bw2 = ui.w(msg) + 24 + (btn != null ? ui.w(btn) + 22 : 0);
-				int bh2 = 18, bx2 = (vw - bw2) / 2, by2 = m + 2 - Math.round((1f - uAp) * 14f);
-				ui.panel(bx2, by2, bw2, bh2, 6, Theme.fade(0xFF111318, 0.96f * uAp), Theme.fade(Theme.accent(), 0.7f * uAp));
-				ui.circle(bx2 + 9, by2 + bh2 / 2, 2, Theme.fade(Theme.accent(), uAp));
-				ui.text(msg, bx2 + 16, by2 + 5, Theme.fade(0xFFFFFFFF, uAp));
+				String btn = us == Updater.State.AVAILABLE ? (Updater.canInstall() ? "Update" : "Open") : us == Updater.State.READY ? "Restart" : null;
+				int bw = ui.w(msg) + 26 + (btn != null ? ui.w(btn) + 24 : 0), bh = 20;
+				int bx = (vw - bw) / 2, by = m - 2 - Math.round((1f - uAp) * 14f);
+				ui.rrect(bx, by, bw, bh, 10, Theme.fade(0xFF111116, 0.94f * uAp));
+				ui.ring(bx, by, bw, bh, 10, Theme.fade(0xFFFFFFFF, 0.12f * uAp));
+				ui.text(msg, bx + 12, by + 6, Theme.fade(0xFFFFFFFF, uAp));
 				if (btn != null) {
-					int bbw = ui.w(btn) + 12, bbx = bx2 + bw2 - bbw - 3;
-					boolean hov = ui.over(bbx, by2 + 3, bbw, 12);
-					float hv = ui.anim("updbtn", hov);
-					ui.rrect(bbx, by2 + 3, bbw, 12, 6, Theme.mix(Theme.fade(Theme.accent(), 0.7f), Theme.accent(), hv));
-					ui.center(btn, bbx + bbw / 2, by2 + 5, 0xFFFFFFFF);
-					ui.hit("updbtn", bbx, by2 + 3, bbw, 12, UpdateDialog::start, null, null);
+					int bbw = ui.w(btn) + 14, bbx = bx + bw - bbw - 3;
+					float hv = ui.anim("updbtn", ui.over(bbx, by + 3, bbw, bh - 6));
+					ui.rrect(bbx, by + 3, bbw, bh - 6, 7, Theme.fade(Theme.mix(Theme.accent(), 0xFFFFFFFF, 0.12f * hv), uAp));
+					ui.center(btn, bbx + bbw / 2, by + 6, Theme.fade(Ui.onAccent(), uAp));
+					ui.hit("updbtn", bbx, by + 3, bbw, bh - 6, UpdateDialog::start, null, null);
 				}
 			}
 		}
 
-		// ---- layout: the button column on the left, two stacked cards on the right, centred together ----
-		final int cardW = 214, colGap = 40;
-		int heroW = wide ? Math.min(270, vw - cardW - colGap - m * 2) : vw - m * 2;
-		int heroX = wide ? (vw - (heroW + colGap + cardW)) / 2 : m;
-		int heroH = 48, rowH = 32, secGap = 8;
-		String tipText = TIPS[(int) ((now / 7000L) % TIPS.length)];
-		java.util.List<String> tipLines = ui.wrap(tipText, cardW - 28);
-		int cardAH = 112;                                    // stats card
-		int cardBNeed = 14 + 10 + 8 + 16 + 14 + 10 + 4 + tipLines.size() * 10 + 14; // quick switches + tip card
-		int leftH = 46 + 16 + 10 + 22 + heroH + 12 + rowH + secGap + rowH;
-		int blockH = Math.max(leftH, wide ? cardAH + 10 + cardBNeed : 0);
-		int y = Math.max(m + 28, (vh - blockH) / 2 - 4);
-		int blockTop = y;
-
-		String user = client.getSession() != null ? client.getSession().getUsername() : "Player";
-		float gAp = Theme.easeOutCubic(Math.min(1f, (now - born) / 500f));
-		int slide = Math.round((1f - gAp) * -16f);
-		// wordmark: bolt, RAY, then CLIENT and the version chip
-		int bw0 = Brand.boltWidth(2);
-		Brand.bolt(ctx, heroX + bw0 / 2 + slide, y + 1, 2, gAp, now);
-		int wx = heroX + bw0 + 12 + slide;
-		Brand.word(ctx, "RAY", wx, y, 4, Theme.fade(0xFFFFFFFF, gAp));
-		ui.spaced("CLIENT", wx + 2, y + 35, Theme.fade(Theme.accent(), gAp), 4);
-		String vtxt = "v" + RayClient.VERSION;
-		int vchipX = wx + 2 + ui.spacedWidth("CLIENT", 4) + 10, vchipW = ui.w(vtxt) + 12;
-		ui.rrect(vchipX, y + 32, vchipW, 14, 5, Theme.fade(0xFF1B1F26, gAp));
-		ui.ring(vchipX, y + 32, vchipW, 14, 5, Theme.fade(Theme.STROKE_HI, gAp));
-		ui.text(vtxt, vchipX + 6, y + 36, Theme.fade(Theme.DIM, gAp));
-		y += 46 + 16;
-		ui.text("Welcome back, " + ui.fit(user, heroW - 100), heroX + slide, y, Theme.fade(Theme.TEXT, gAp));
-		ui.text("Minecraft " + MC_VERSION, heroX + slide + ui.w("Welcome back, " + ui.fit(user, heroW - 100)) + 10, y, Theme.fade(Theme.MUTE, gAp));
-		y += 10 + 22;
-
-		hero(heroX, y, heroW, heroH, "SINGLEPLAYER", "Jump into one of your worlds", 0, () -> client.setScreen(new SelectWorldScreen(this)));
-		y += heroH + 12;
-		int half = (heroW - secGap) / 2;
-		glass(heroX, y, half, rowH, "MULTIPLAYER", eye, false, 1, () -> client.setScreen(new MultiplayerScreen(this)));
-		glass(heroX + half + secGap, y, half, rowH, "MODS", star, true, 2, () -> client.setScreen(new RayScreen(this)));
-		y += rowH + secGap;
-		glass(heroX, y, heroW, rowH, "PROFILES", new ItemStack(Items.COMPARATOR), false, 3, () -> {
-			RayScreen.selectPage("PROFILES");
-			client.setScreen(new RayScreen(this));
-		});
-
-		// ---- right column: stats card, then quick switches + tip ----
-		if (wide) {
-			int cx = heroX + heroW + colGap;
-			float cAp = ui.appear("statcard", 260);
-			if (cAp > 0.02f) {
-				int px = cx + Math.round((1f - cAp) * 24f);
-				int rx = px + 14, rw = cardW - 28;
-
-				// card A: your client
-				ui.surface(px, blockTop, cardW, cardAH, 12);
-				int ry = blockTop + 14;
-				ui.spaced("YOUR CLIENT", rx, ry, Theme.fade(Theme.DIM, cAp), 2);
-				boolean allGood = Updater.state != Updater.State.ERROR;
-				ui.circle(px + cardW - 18, ry + 4, 3, Theme.fade(allGood ? Theme.TILE_ON : Theme.BAD, cAp));
-				ry += 10 + 8;
-				ui.rect(rx, ry - 4, rw, 1, Theme.fade(Theme.STROKE, 0.8f * cAp));
-				ry = statLine(rx, ry, rw, "Modules", modulesOn + " / " + modulesAll, modulesOn > 0, cAp);
-				ry = statLine(rx, ry, rw, "Sky", cfg.skyOn ? Sky.presetName(cfg.skyPreset) : "Off", cfg.skyOn, cAp);
-				String lyr = !cfg.lyricsOn ? "Off" : Lyrics.spotifyFound && !Lyrics.title.isEmpty() ? Lyrics.title : "Waiting for Spotify";
-				ry = statLine(rx, ry, rw, "Lyrics", lyr, cfg.lyricsOn && Lyrics.spotifyFound, cAp);
-				String upd = switch (Updater.state) {
-					case AVAILABLE, DOWNLOADING -> "v" + Updater.latest + " available";
-					case READY -> "Installs on exit";
-					case CHECKING -> "Checking...";
-					case UP_TO_DATE -> "Up to date";
-					default -> "v" + RayClient.VERSION;
-				};
-				statLine(rx, ry, rw, "Version", upd, Updater.state == Updater.State.UP_TO_DATE || Updater.state == Updater.State.READY || Updater.hasNews(), cAp);
-
-				// card B: quick switches and a tip
-				int by = blockTop + cardAH + 10, bh = blockH - cardAH - 10;
-				ui.surface(px, by, cardW, bh, 12);
-				int qy = by + 14;
-				ui.spaced("QUICK SWITCHES", rx, qy, Theme.fade(Theme.DIM, cAp), 2);
-				qy += 10 + 8;
-				int chx = rx;
-				chx += ui.chip(chx, qy, "HUD", cfg.enabled, () -> {
-					cfg.enabled = !cfg.enabled;
-					RayConfig.save();
-				}) + 5;
-				chx += ui.chip(chx, qy, "SKY", cfg.skyOn, () -> {
-					cfg.skyOn = !cfg.skyOn;
-					RayConfig.save();
-				}) + 5;
-				ui.chip(chx, qy, "LYRICS", cfg.lyricsOn, () -> {
-					cfg.lyricsOn = !cfg.lyricsOn;
-					RayConfig.save();
-				});
-				qy += 16 + 12;
-				ui.rect(rx, qy - 6, rw, 1, Theme.fade(Theme.STROKE, 0.8f * cAp));
-				ui.spaced("TIP", rx, qy, Theme.fade(Theme.accent(), 0.9f * cAp), 2);
-				qy += 14;
-				for (String line : tipLines) {
-					ui.text(line, rx, qy, Theme.fade(Theme.DIM, cAp));
-					qy += 10;
-				}
+		String label;
+		Runnable action = null;
+		switch (us) {
+			case CHECKING -> label = "Checking for updates" + ".".repeat(1 + (int) ((now / 350L) % 3));
+			case AVAILABLE -> {
+				label = "Update to " + Updater.latest;
+				action = UpdateDialog::start;
+			}
+			case DOWNLOADING -> {
+				label = "Downloading " + Updater.progress + "%";
+				action = UpdateDialog::start;
+			}
+			case READY -> {
+				label = "Restart to update";
+				action = UpdateDialog::start;
+			}
+			case ERROR -> {
+				label = "Update check failed. Try again";
+				action = Updater::checkNow;
+			}
+			default -> {
+				label = "Check for updates";
+				action = Updater::checkNow;
 			}
 		}
-
-		// ---- check for updates (bottom left) ----
-		{
-			Updater.State us = Updater.state;
-			String label;
-			Runnable action = null;
-			switch (us) {
-				case CHECKING -> label = "CHECKING" + ".".repeat(1 + (int) ((now / 350L) % 3));
-				case AVAILABLE -> {
-					label = "UPDATE TO " + Updater.latest;
-					action = UpdateDialog::start;
-				}
-				case DOWNLOADING -> {
-					label = "DOWNLOADING " + Updater.progress + "%";
-					action = UpdateDialog::start;
-				}
-				case READY -> {
-					label = "RESTART TO UPDATE";
-					action = UpdateDialog::start;
-				}
-				default -> {
-					label = "CHECK FOR UPDATES";
-					action = Updater::checkNow;
-				}
-			}
-			int ubw = ui.w(label) + 24, ubh = 18, ubx = m, uby = vh - m - 18;
-			boolean uhov = action != null && ui.over(ubx, uby, ubw, ubh);
-			float uhv = ui.anim("updcheck", uhov);
-			int uacc = us == Updater.State.AVAILABLE || us == Updater.State.READY ? Theme.accent() : 0xFF2A3047;
-			ui.rrect(ubx, uby, ubw, ubh, 5, Theme.mix(0xFF14171D, Theme.mix(0xFF14171D, Theme.accent(), 0.3f), uhv));
-			ui.ring(ubx, uby, ubw, ubh, 5, Theme.mix(uacc, Theme.accent(), uhv));
-			ui.center(label, ubx + ubw / 2, uby + 5, Theme.mix(Theme.DIM, 0xFFFFFFFF, Math.max(uhv, us == Updater.State.AVAILABLE ? 1f : 0f)));
-			if (action != null) ui.hit("updcheck", ubx, uby, ubw, ubh, action, null, null);
-			String note = switch (us) {
-				case UP_TO_DATE -> "You are up to date";
-				case ERROR -> "Could not check (" + Updater.error + ")";
-				default -> null;
-			};
-			if (note != null) ui.text(ui.fit(note, vw - ubw - 24), ubx + ubw + 10, uby + 5, us == Updater.State.ERROR ? 0xFFFF8A94 : Theme.MUTE);
-		}
-		ui.right("Not affiliated with Mojang AB", vw - m, vh - m - 13, Theme.MUTE);
+		String ver = "v" + RayClient.VERSION;
+		int ly = vh - m - 8;
+		ui.text(ver, m, ly, Theme.fade(Theme.MUTE, intro));
+		int lx = m + ui.w(ver) + 12;
+		int lw = ui.w(label);
+		boolean lhov = action != null && ui.over(lx - 2, ly - 3, lw + 4, 14);
+		float lh = ui.anim("updlink", lhov);
+		ui.text(label, lx, ly, Theme.fade(Theme.mix(us == Updater.State.ERROR ? 0xFFFF8A94 : Theme.MUTE, 0xFFFFFFFF, lh), intro));
+		if (lh > 0.02f) ui.rect(lx, ly + 9, Math.round(lw * lh), 1, Theme.fade(0xFFFFFFFF, 0.5f * lh));
+		if (action != null) ui.hit("updlink", lx - 2, ly - 3, lw + 4, 14, action, null, null);
+		ui.right("Not affiliated with Mojang AB", vw - m, ly, Theme.fade(Theme.MUTE, intro * 0.8f));
 
 		UpdateDialog.render(ui, vw, vh);
 		ui.poll();

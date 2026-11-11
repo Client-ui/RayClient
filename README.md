@@ -1,8 +1,17 @@
-# Ray Client v1.13
+# Ray Client
 
 A client-side Fabric quality-of-life and visual customization mod for Minecraft 1.21.11.
 
-## What is new in 1.13
+## What is new: the redesign
+
+- **Start menu: "Orbit and Dock"**: the logo sits inside two faint, slowly turning orbits with small satellites (like the logo's own ring), with the stars shifting slightly as you move the mouse. The actions live in a glass dock at the bottom: icons swell toward the cursor and name themselves when hovered. No cards or tips; update news is one quiet line. (Magnification respects the Animations setting.)
+- **Restraint**: no glows, no gradient fills, no tinted cards, no decorative highlight lines, no tracked all-caps labels. Surfaces are flat translucent glass, text is sentence case, and the accent colour appears only where something is on or selected.
+- **Logo everywhere**: the orbiting-R logo is drawn as crisp vector shapes (no texture) on the title screen, loading screen, menu header, pause menu, HUD editor and as the mod icon.
+- **Accent themes**: Ember (the logo's orange) by default, plus Ocean, Violet, Mint, Rose, Gold, Ice, Crimson and Rainbow.
+- **Inter everywhere**: Inter (SemiBold for headings) replaces the pixel font, and Minecraft's own text (chat, tooltips, vanilla menus) uses it too. Settings > Appearance can switch back or pick another font. Existing configs are moved to the new look once.
+- **Lighter to draw**: far fewer draw calls per frame than the first glass version (the module list went from about 12k to about 3k), cheaper text outlines, and no per-letter spacing except in a few headings.
+
+## What was new in 1.13
 
 - **A calmer, more consistent look**: flat graphite surfaces with 1px hairlines, one accent colour used only for state (on, selected, progress, focus), smaller consistent corner radii, text tabs with a sliding underline, plain toggles and sliders, restrained glows. Applies to the module list, every settings page, the start menu, notifications and the buttons in Minecraft's own menus.
 - **Lyrics behave better**: words are timed to how long a line is really sung (not the whole gap to the next line), a sentence never splits into a new group mid-line, the bar keeps one width per song, long lines scroll with the singing instead of shrinking, and floating words fade instead of towering over you when you walk up to them.
@@ -64,7 +73,7 @@ The tag must match `mod_version`, otherwise the workflow stops.
 ## Features
 
 - HUD widgets for FPS, CPS, ping, coordinates, direction, biome, potion effects, armor, keystrokes, and more.
-- HUD editor, module settings, profiles, configurable blue-first themes, and custom crosshair.
+- HUD editor, module settings, profiles, configurable accent themes (orange by default), and custom crosshair.
 - Client-side visual options such as zoom, viewmodel, and HUD styling.
 - Informational PvP displays only; no automated combat, reach changes, packet manipulation, or anti-cheat bypasses.
 
@@ -77,4 +86,4 @@ Ray aims to stay vanilla-friendly, but individual servers may restrict particula
 
 ## Client-side options
 
-Ray includes optional toggle sprint and gamma-based fullbright, a configurable blue-first UI theme, vanilla font choices for the Ray menu, and a branded title and loading screen. These are client-side conveniences, but individual multiplayer servers may restrict specific mods or features; check each server’s rules. No anti-cheat bypass or automated combat feature is included.
+Ray includes optional toggle sprint and gamma-based fullbright, a configurable accent theme (orange by default), font choices for the Ray menu, and a branded title and loading screen. These are client-side conveniences, but individual multiplayer servers may restrict specific mods or features; check each server’s rules. No anti-cheat bypass or automated combat feature is included.

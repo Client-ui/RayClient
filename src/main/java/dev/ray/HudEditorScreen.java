@@ -99,7 +99,7 @@ public class HudEditorScreen extends Screen {
 		int tbX = (tvw - tbW) / 2, tbY = tvh - tbH - 12;
 		int rx = Math.round(tbX * ts), ry = Math.round(tbY * ts), rw = Math.round(tbW * ts), rh = Math.round(tbH * ts);
 		// centre cluster: logo, name and the Mods / Settings buttons (virtual units of the same scale)
-		int clW = 150, clH = 98;
+		int clW = 150, clH = 112;
 		int clX = (tvw - clW) / 2, clY = (tvh - clH) / 2;
 		int crx = Math.round(clX * ts), cry = Math.round(clY * ts), crw = Math.round(clW * ts), crh = Math.round(clH * ts);
 		boolean overToolbar = inside(mouseX, mouseY, rx, ry, rw, rh) || inside(mouseX, mouseY, crx, cry, crw, crh);
@@ -117,7 +117,7 @@ public class HudEditorScreen extends Screen {
 				int tx = Math.max(2, Math.min(width - tw - 2, m.x));
 				int ty = m.y - 18 >= 2 ? m.y - 18 : m.y + m.eh() + 4;
 				ui.shadow(tx, ty, tw, 14, 5);
-				ui.panel(tx, ty, tw, 14, 5, 0xF2111318, Theme.fade(accent, 0.8f));
+				ui.glassPanel(tx, ty, tw, 14, 6, 0xF024242C, 0xF010101A, 0.40f, 0.12f);
 				ui.text(tag, tx + 6, ty + 3, 0xFFFFFFFF);
 			}
 		}
@@ -128,14 +128,14 @@ public class HudEditorScreen extends Screen {
 		}
 
 		// title
-		String title = "HUD EDITOR";
+		String title = "HUD Editor";
 		String hint = "Drag to move   -   Right-click for settings   -   ESC to close";
-		int hw = Math.max(ui.spacedWidth(title, 2), ui.w(hint)) + 36;
+		int hw = Math.max(ui.headWidth(title), ui.w(hint)) + 40;
 		int hx = (width - hw) / 2, hy = 8 - Math.round((1f - open) * 20f);
 		ui.shadow(hx, hy, hw, 34, 9);
-		ui.panelGrad(hx, hy, hw, 34, 9, 0xF2171A20, 0xF2101217, Theme.STROKE_HI);
-		ui.spacedCenter(title, width / 2, hy + 7, 0xFFFFFFFF, 2);
-		ui.rrect(width / 2 - 12, hy + 18, 24, 2, 1, accent);
+		ui.glassPanel(hx, hy, hw, 34, 12, 0xF026262E, 0xF010101A, 0.34f, 0.08f);
+		ui.headCenter(title, width / 2, hy + 6, 0xFFFFFFFF);
+		
 		ui.center(hint, width / 2, hy + 22, Theme.DIM);
 
 		// toolbar (scaled)
@@ -146,34 +146,35 @@ public class HudEditorScreen extends Screen {
 		{
 			int ccx = tvw / 2;
 			int top = clY + Math.round((1f - open) * -14f);
-			int bw0 = Brand.boltWidth(2);
-			Brand.bolt(ctx, ccx, top, 2, open, now);
-			ui.spacedOutlinedCenter("RAY CLIENT", ccx, top + 48, Theme.fade(0xFFFFFFFF, open), 3);
-			int by2 = top + 64, mw = 92, gw = 26, gap2 = 6;
+			int lh = 54;
+			Brand.logo(ctx, ccx, top, lh, open, now);
+			String nm = "Ray Client";
+			int nw = Math.round(ui.headWidth(nm) * 1.3f);
+			ui.scaledHead(nm, ccx - nw / 2, top + lh + 6, 1.3f, Theme.fade(0xFFFFFFFF, open));
+			int by2 = top + lh + 24, mw = 92, gw = 26, gap2 = 6;
 			int bx2 = ccx - (mw + gap2 + gw) / 2;
-			ui.pill(bx2, by2, mw, 26, "MODS", accent, true, () -> openMods("ALL", null));
+			ui.primary(bx2, by2, mw, 26, "Mods", () -> openMods("ALL", null));
 			boolean gh = ui.over(bx2 + mw + gap2, by2, gw, 26);
 			float gv = ui.anim("hudgear", gh);
-			ui.rrectGrad(bx2 + mw + gap2, by2, gw, 26, 6, Theme.mix(0xFF1B1F26, 0xFF2A303B, gv), Theme.mix(0xFF14171D, 0xFF1F242C, gv));
-			ui.ring(bx2 + mw + gap2, by2, gw, 26, 6, Theme.mix(Theme.STROKE, accent, gv * 0.8f));
+			ui.rrect(bx2 + mw + gap2, by2, gw, 26, 13, Theme.mix(Ui.white(0.07f), Theme.fade(accent, 0.35f), gv));
+			ui.rimGlass(bx2 + mw + gap2, by2, gw, 26, 13, 0.26f + 0.16f * gv, 0.07f);
 			ui.gearIcon(bx2 + mw + gap2 + 10, by2 + 10, Theme.mix(Theme.DIM, 0xFFFFFFFF, gv));
 			ui.click("hudsettings", bx2 + mw + gap2, by2, gw, 26, () -> openMods("ALL", "SETTINGS"));
 		}
 
 		int ty0 = tbY + Math.round((1f - open) * 30f);
 		ui.shadow(tbX, ty0, tbW, tbH, 10);
-		ui.panelGrad(tbX, ty0, tbW, tbH, 10, 0xF4171A20, 0xF4101217, Theme.STROKE_HI);
-		ui.rect(tbX + 14, ty0 + 1, tbW - 28, 1, Theme.fade(0xFFFFFFFF, 0.07f));
+		ui.glassPanel(tbX, ty0, tbW, tbH, 14, 0xF026262E, 0xF010101A, 0.34f, 0.08f);
 		int bx = tbX + 10, by = ty0 + 10, bh = 34, gap = 6;
 		int free = tbW - 20 - gap * 3;
 		int w2 = free * 22 / 100, w3 = free * 24 / 100, w4 = free * 34 / 100, w5 = free - w2 - w3 - w4;
-		ui.pill(bx, by, w2, bh, "VISUALS", 0xFF8FA3C8, true, () -> openMods("VISUAL", null));
+		ui.pill(bx, by, w2, bh, "Visuals", 0xFFB8B8C8, true, () -> openMods("VISUAL", null));
 		bx += w2 + gap;
-		ui.pill(bx, by, w3, bh, "PROFILES", 0xFF8FA3C8, true, () -> openMods("ALL", "PROFILES"));
+		ui.pill(bx, by, w3, bh, "Profiles", 0xFFB8B8C8, true, () -> openMods("ALL", "PROFILES"));
 		bx += w3 + gap;
-		ui.pill(bx, by, w4, bh, "AUTO ARRANGE", 0xFF8FA3C8, true, () -> autoArrange(active));
+		ui.pill(bx, by, w4, bh, "Auto arrange", 0xFFB8B8C8, true, () -> autoArrange(active));
 		bx += w4 + gap;
-		ui.pill(bx, by, w5, bh, "RESET", 0xFFE0384A, true, () -> {
+		ui.pill(bx, by, w5, bh, "Reset", Theme.BAD, true, () -> {
 			cfg.positions.clear();
 			RayConfig.save();
 			Toasts.push("HUD positions reset");

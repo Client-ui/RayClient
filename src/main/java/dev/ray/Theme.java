@@ -3,34 +3,37 @@ package dev.ray;
 import java.awt.Color;
 
 public final class Theme {
-	public static final int[] COLORS = {0xFF4C8DFF, 0xFF9B6BFF, 0xFFFF4D5E, 0xFF2FD67B, 0xFFFF8A3D, 0xFFE5E7EB, 0xFF25D0EE, 0xFFFF6FB5};
-	public static final String[] NAMES = {"Blue", "Purple", "Red", "Green", "Orange", "White", "Cyan", "Pink"};
+	/** Accent themes: each has a main colour and a second colour (used for the gradient end). Ember is the logo's colour. */
+	public static final int[] COLORS = {0xFFFFA45C, 0xFF5CC8FF, 0xFFB58CFF, 0xFF5CF2B0, 0xFFFF8FB5, 0xFFFFD65C, 0xFFE9EEFA, 0xFFFF6B6B};
+	public static final int[] COLORS2 = {0xFFFF4D3D, 0xFF3D6BFF, 0xFF7B4DFF, 0xFF18B98A, 0xFFE8467C, 0xFFFF9F2E, 0xFF9DB4D6, 0xFFC81E3C};
+	public static final String[] NAMES = {"Ember", "Ocean", "Violet", "Mint", "Rose", "Gold", "Ice", "Crimson"};
 
 	public static final String[] PALETTE_NAMES = {"Default", "White", "Red", "Green", "Blue", "Yellow", "Cyan", "Pink", "Orange", "Purple"};
 	private static final int[] PALETTE = {0, 0xFFFFFFFF, 0xFFEF4444, 0xFF22C55E, 0xFF3B82F6, 0xFFFACC15, 0xFF22D3EE, 0xFFF472B6, 0xFFF97316, 0xFF8B5CF6};
 
-	// ---- UI palette: neutral graphite, one accent used only for state ----
-	public static final int BG_DEEP = 0xFF07080B;
-	public static final int BG = 0xFF0B0D11;
-	public static final int PANEL = 0xFF0F1115;
-	public static final int PANEL_TOP = 0xFF14171D;
-	public static final int CARD = 0xFF15181E;
-	public static final int CARD_TOP = 0xFF1A1E25;
-	public static final int CARD_HOVER = 0xFF1E222A;
-	public static final int STROKE = 0xFF2A2F3A;
-	public static final int STROKE_HI = 0xFF3A414F;
-	public static final int TEXT = 0xFFECEFF5;
-	public static final int DIM = 0xFFA3AAB8;
-	public static final int MUTE = 0xFF687080;
-	public static final int GOOD = 0xFF35D07F;
-	public static final int BAD = 0xFFFF4D5E;
-	public static final int BOLT = 0xFFFFD84A;
+	// ---- UI palette: near-black glass, white text, one accent used only for state ----
+	public static final int BG_DEEP = 0xFF040406;
+	public static final int BG = 0xFF08080B;
+	public static final int PANEL = 0xFF0E0E13;
+	public static final int PANEL_TOP = 0xFF16161C;
+	public static final int CARD = 0xFF121217;
+	public static final int CARD_TOP = 0xFF18181F;
+	public static final int CARD_HOVER = 0xFF1F1F27;
+	/** Hairlines are translucent white so they pick up whatever is behind the glass. */
+	public static final int STROKE = 0x24FFFFFF;
+	public static final int STROKE_HI = 0x40FFFFFF;
+	public static final int TEXT = 0xFFF5F5F8;
+	public static final int DIM = 0xFFA8A8B4;
+	public static final int MUTE = 0xFF6E6E7C;
+	public static final int GOOD = 0xFF4ADE9A;
+	public static final int BAD = 0xFFFF5D6C;
+	public static final int BOLT = 0xFFFFB45C;
 
-	/** Border colours of the module tiles: green when a module is on, red when it is off. */
-	public static final int TILE_ON = 0xFF2FCB74;
-	public static final int TILE_OFF = 0xFFC93F4C;
-	public static final int TILE_BG = 0xFF14171C;
-	public static final int TILE_BG_HOVER = 0xFF1C2027;
+	/** Status colours of the module tiles. On uses the accent now; these remain for the small status dots. */
+	public static final int TILE_ON = 0xFF4ADE9A;
+	public static final int TILE_OFF = 0xFF6E6E7C;
+	public static final int TILE_BG = 0xFF14141A;
+	public static final int TILE_BG_HOVER = 0xFF1C1C24;
 
 	private Theme() {}
 
@@ -100,10 +103,26 @@ public final class Theme {
 		RayConfig cfg = RayConfig.get();
 		if (cfg.rainbow) {
 			float h = (System.currentTimeMillis() % 4000L) / 4000f;
-			return 0xFF000000 | (Color.HSBtoRGB(h, 0.6f, 1f) & 0xFFFFFF);
+			return 0xFF000000 | (Color.HSBtoRGB(h, 0.55f, 1f) & 0xFFFFFF);
 		}
 		int i = Math.max(0, Math.min(COLORS.length - 1, cfg.accent));
 		return COLORS[i];
+	}
+
+	/** The second accent colour (the other end of the gradient). */
+	public static int accent2() {
+		RayConfig cfg = RayConfig.get();
+		if (cfg.rainbow) {
+			float h = ((System.currentTimeMillis() + 700L) % 4000L) / 4000f;
+			return 0xFF000000 | (Color.HSBtoRGB(h, 0.75f, 0.9f) & 0xFFFFFF);
+		}
+		int i = Math.max(0, Math.min(COLORS2.length - 1, cfg.accent));
+		return COLORS2[i];
+	}
+
+	/** Point t (0..1) along the accent gradient. */
+	public static int accentAt(float t) {
+		return mix(accent(), accent2(), t);
 	}
 
 	public static int withAlpha(int argb, int alpha) {

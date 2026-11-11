@@ -60,7 +60,7 @@ public final class Toasts {
 			float out = age > LIFE - FADE_OUT ? Math.max(0f, (LIFE - age) / (float) FADE_OUT) : 1f;
 			float a = Math.min(Theme.easeOutCubic(in), out);
 			int tw = UI.w(t.text());
-			int bw = tw + 38, bh = 22;
+			int bw = tw + 38, bh = 24;
 			int bx = (sw - bw) / 2;
 
 			// the stack glides to its place instead of jumping
@@ -70,16 +70,16 @@ public final class Toasts {
 			int by = Math.round(ty) - Math.round((1f - Theme.easeOutBack(in)) * 16f) - (out < 1f ? Math.round((1f - out) * 6f) : 0);
 
 			int tone = tone(t.text(), accent);
-			UI.shadow(bx, by, bw, bh, 8);
-			UI.panelGrad(bx, by, bw, bh, 8, Theme.fade(0xFF171A20, 0.97f * a), Theme.fade(0xFF101217, 0.97f * a), Theme.fade(Theme.STROKE_HI, a));
+			UI.shadow(bx, by, bw, bh, 11);
+			UI.glassPanel(bx, by, bw, bh, 11, Theme.fade(0xFF26262F, 0.94f * a), Theme.fade(0xFF0E0E13, 0.94f * a), 0.34f * a, 0.08f * a);
 			// status dot with a soft halo
 			UI.circle(bx + 13, by + bh / 2, 5, Theme.fade(tone, 0.20f * a));
 			UI.circle(bx + 13, by + bh / 2, 2, Theme.fade(tone, a));
-			UI.text(t.text(), bx + 24, by + 7, Theme.fade(Theme.TEXT, a));
+			UI.text(t.text(), bx + 24, by + 8, Theme.fade(Theme.TEXT, a));
 			// countdown line
 			float life = Math.max(0f, 1f - age / (float) LIFE);
 			int lw = Math.max(0, Math.round((bw - 24) * life));
-			if (lw > 1) UI.rrect(bx + 12, by + bh - 3, lw, 1, 0, Theme.fade(tone, 0.55f * a));
+			if (lw > 1) UI.rect(bx + 12, by + bh - 3, lw, 1, Theme.fade(tone, 0.55f * a));
 			y += bh + 5;
 		}
 	}
