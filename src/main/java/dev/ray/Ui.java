@@ -497,6 +497,7 @@ public final class Ui {
 
 	/** A recessed field or row inside a window: a faint lighter tint and a hairline. hover is 0..1. */
 	public void inset(int x, int y, int w, int h, int r, float hover) {
+		r = Math.min(r, 6); // controls use cut corners everywhere
 		rrect(x, y, w, h, r, white(0.05f + 0.045f * hover));
 		// borderless like a settings list; the hairline only appears under the cursor (saves a lot of draw calls)
 		if (hover > 0.05f) ring(x, y, w, h, r, Theme.mix(white(0.12f), Theme.fade(Theme.accent(), 0.60f), hover * 0.7f));
@@ -810,11 +811,11 @@ public final class Ui {
 		float a = anim("chip" + label, over(x, y, w, 16));
 		float on = anim("chipon" + label, active);
 		if (on > 0.02f) {
-			rrect(x, y, w, 16, 8, Theme.fade(Theme.accent(), on));
+			rrect(x, y, w, 16, 5, Theme.fade(Theme.accent(), on));
 		}
 		if (on < 0.98f) {
-			rrect(x, y, w, 16, 8, white((0.05f + 0.05f * a) * (1f - on)));
-			ring(x, y, w, 16, 8, white((0.12f + 0.08f * a) * (1f - on)));
+			rrect(x, y, w, 16, 5, white((0.05f + 0.05f * a) * (1f - on)));
+			ring(x, y, w, 16, 5, white((0.12f + 0.08f * a) * (1f - on)));
 		}
 		text(label, x + 9, y + 4, Theme.mix(Theme.mix(Theme.DIM, 0xFFFFFFFF, a * 0.7f), onAccent(), on));
 		click("chip" + label, x, y, w, 16, click);
@@ -826,8 +827,8 @@ public final class Ui {
 		boolean hov = over(x, y, w, h);
 		float a = anim("ib" + x + "," + y, hov);
 		float p = anim("ibp" + x + "," + y, held(x, y, w, h));
-		rrect(x, y + Math.round(p), w, h, 7, Theme.mix(Theme.fade(base, 0.55f), Theme.fade(hover, 0.85f), a));
-		ring(x, y + Math.round(p), w, h, 7, white(0.10f + 0.12f * a));
+		rrect(x, y + Math.round(p), w, h, 5, Theme.mix(Theme.fade(base, 0.55f), Theme.fade(hover, 0.85f), a));
+		ring(x, y + Math.round(p), w, h, 5, white(0.10f + 0.12f * a));
 		click("ib" + x + "," + y, x, y, w, h, click);
 		return hov;
 	}
@@ -838,7 +839,7 @@ public final class Ui {
 		float a = anim("lb" + label + x, hov);
 		float p = anim("lbp" + label + x, held(x, y, w, h));
 		int yy = y + Math.round(p);
-		rrect(x, yy, w, h, 7, Theme.mix(white(0.07f), Theme.fade(color, 0.30f), 0.35f + 0.65f * a));
+		rrect(x, yy, w, h, 5, Theme.mix(white(0.07f), Theme.fade(color, 0.30f), 0.35f + 0.65f * a));
 		center(label, x + w / 2, yy + (h - 8) / 2, Theme.mix(0xFFE4E4EC, 0xFFFFFFFF, a));
 		click("lb" + label + x + "," + y, x, y, w, h, action);
 	}
@@ -849,7 +850,7 @@ public final class Ui {
 		float a = anim("pl" + label + x + "," + y, hov);
 		float p = anim("plp" + label + x + "," + y, enabled && held(x, y, w, h));
 		int yy = y + Math.round(p);
-		int r = Math.min(9, h / 2);
+		int r = 5;
 		rrect(x, yy, w, h, r, enabled ? white(0.07f + 0.06f * a) : white(0.03f));
 		if (enabled && a > 0.05f) ring(x, yy, w, h, r, white(0.16f * a));
 		center(label, x + w / 2, yy + (h - 8) / 2, enabled ? Theme.mix(0xFFD8D8E2, 0xFFFFFFFF, a) : Theme.MUTE);
@@ -862,7 +863,7 @@ public final class Ui {
 		float a = anim("pr" + label + x + "," + y, hov);
 		float p = anim("prp" + label + x + "," + y, held(x, y, w, h));
 		int yy = y + Math.round(p);
-		int r = Math.min(9, h / 2);
+		int r = 5;
 		accentFill(x, yy, w, h, r, a);
 		center(label, x + w / 2, yy + (h - 8) / 2, onAccent());
 		click("pr" + label + x + "," + y, x, y, w, h, action);
@@ -967,8 +968,8 @@ public final class Ui {
 		float a = anim("b" + label, hov);
 		float p = anim("bp" + label, held(r[0], r[1], r[2], H));
 		int yy = r[1] + Math.round(p);
-		rrect(r[0], yy, r[2], H, 8, white(0.07f + 0.06f * a));
-		if (a > 0.05f) ring(r[0], yy, r[2], H, 8, white(0.16f * a));
+		rrect(r[0], yy, r[2], H, 5, white(0.07f + 0.06f * a));
+		if (a > 0.05f) ring(r[0], yy, r[2], H, 5, white(0.16f * a));
 		center(label, r[0] + r[2] / 2, yy + 8, Theme.mix(0xFFDADAE4, 0xFFFFFFFF, a));
 		click("b" + label, r[0], r[1], r[2], H, action);
 	}

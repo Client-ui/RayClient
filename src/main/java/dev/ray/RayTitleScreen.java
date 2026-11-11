@@ -146,8 +146,8 @@ public class RayTitleScreen extends Screen {
 			int cx = Math.round(xx + size[hovered] / 2f);
 			int tw = ui.w(e.label()) + 18;
 			int ty = Math.round(iconBottom - size[hovered]) - 24;
-			ui.rrect(cx - tw / 2, ty, tw, 17, 8, Theme.fade(0xFF111116, 0.96f * ap * tagAp));
-			ui.ring(cx - tw / 2, ty, tw, 17, 8, Theme.fade(0xFFFFFFFF, 0.14f * ap * tagAp));
+			ui.rrect(cx - tw / 2, ty, tw, 17, 5, Theme.fade(0xFF111116, 0.96f * ap * tagAp));
+			ui.ring(cx - tw / 2, ty, tw, 17, 5, Theme.fade(0xFFFFFFFF, 0.14f * ap * tagAp));
 			ui.center(e.label(), cx, ty + 5, Theme.fade(0xFFFFFFFF, ap * tagAp));
 		}
 	}
@@ -231,13 +231,13 @@ public class RayTitleScreen extends Screen {
 				String btn = us == Updater.State.AVAILABLE ? (Updater.canInstall() ? "Update" : "Open") : us == Updater.State.READY ? "Restart" : null;
 				int bw = ui.w(msg) + 26 + (btn != null ? ui.w(btn) + 24 : 0), bh = 20;
 				int bx = (vw - bw) / 2, by = m - 2 - Math.round((1f - uAp) * 14f);
-				ui.rrect(bx, by, bw, bh, 10, Theme.fade(0xFF111116, 0.94f * uAp));
-				ui.ring(bx, by, bw, bh, 10, Theme.fade(0xFFFFFFFF, 0.12f * uAp));
+				ui.rrect(bx, by, bw, bh, 5, Theme.fade(0xFF111116, 0.94f * uAp));
+				ui.ring(bx, by, bw, bh, 5, Theme.fade(0xFFFFFFFF, 0.12f * uAp));
 				ui.text(msg, bx + 12, by + 6, Theme.fade(0xFFFFFFFF, uAp));
 				if (btn != null) {
 					int bbw = ui.w(btn) + 14, bbx = bx + bw - bbw - 3;
 					float hv = ui.anim("updbtn", ui.over(bbx, by + 3, bbw, bh - 6));
-					ui.rrect(bbx, by + 3, bbw, bh - 6, 7, Theme.fade(Theme.mix(Theme.accent(), 0xFFFFFFFF, 0.12f * hv), uAp));
+					ui.rrect(bbx, by + 3, bbw, bh - 6, 5, Theme.fade(Theme.mix(Theme.accent(), 0xFFFFFFFF, 0.12f * hv), uAp));
 					ui.center(btn, bbx + bbw / 2, by + 6, Theme.fade(Ui.onAccent(), uAp));
 					ui.hit("updbtn", bbx, by + 3, bbw, bh - 6, UpdateDialog::start, null, null);
 				}

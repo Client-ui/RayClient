@@ -102,8 +102,8 @@ public abstract class SettingsScreen extends Screen {
 		// header: back + title (+ reset)
 		boolean backHov = ui.over(px + 12, py + 11, 54, 22);
 		float bv = ui.anim("backbtn", backHov);
-		ui.rrect(px + 12, py + 11, 54, 22, 11, Theme.mix(Ui.white(0.06f), Ui.white(0.12f), bv));
-		ui.rimGlass(px + 12, py + 11, 54, 22, 11, 0.24f + 0.16f * bv, 0.07f);
+		ui.rrect(px + 12, py + 11, 54, 22, 5, Theme.mix(Ui.white(0.06f), Ui.white(0.12f), bv));
+		ui.ring(px + 12, py + 11, 54, 22, 5, Ui.white(0.10f + 0.10f * bv));
 		ui.backIcon(px + 20 - Math.round(bv * 2f), py + 18, Theme.mix(Theme.DIM, 0xFFFFFFFF, bv));
 		ui.text("Back", px + 31, py + 18, Theme.mix(Theme.DIM, 0xFFFFFFFF, bv));
 		ui.click("back", px + 12, py + 11, 54, 22, this::close);

@@ -241,8 +241,8 @@ public final class UpdateDialog {
 		int yy = y + Math.round(p);
 		float pulse = 0.5f + 0.5f * (float) Math.sin(System.currentTimeMillis() / 420.0);
 		ui.glow(x, yy, w, h, 10, color, (0.55f + 0.45f * pulse) * fade);
-		ui.rrectGrad(x, yy, w, h, 10, Theme.fade(Theme.mix(color, 0xFFFFFFFF, 0.14f + 0.12f * a), fade), Theme.fade(Theme.mix(color, 0xFF000000, 0.16f - 0.08f * a), fade));
-		ui.rimGlass(x, yy, w, h, 10, 0.5f * fade, 0.12f * fade);
+		ui.rrectGrad(x, yy, w, h, 5, Theme.fade(Theme.mix(color, 0xFFFFFFFF, 0.14f + 0.12f * a), fade), Theme.fade(Theme.mix(color, 0xFF000000, 0.16f - 0.08f * a), fade));
+		
 		ui.center(label, x + w / 2, yy + (h - 8) / 2, Theme.fade(0xFF101014, fade));
 		ui.click("upd-pri" + label, x, y, w, h, action);
 	}

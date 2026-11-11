@@ -42,25 +42,54 @@ public final class ClientFont {
 	}
 
 	private static final Face CLIENT = new Face(), SMOOTH = new Face(), HEAD = new Face();
-	/** Set if Minecraft could not build a styled text once: stop trying and draw normally. */
-	private static boolean broken = false;
+	private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger("ray");
+	/** Which JSON shape of the "font" field Minecraft accepted (0 = plain id, 1 and 2 = object forms), or -1 if none has yet. */
+	private static int form = -1;
+	/** Set if no shape worked: draw normally for a while, then try again (so one bad moment is never permanent). */
+	private static long brokenUntil = 0L;
+	private static boolean reported = false;
 
 	private ClientFont() {}
 
-	private static Text styled(Face face, Identifier id, String s) {
-		if (broken || s == null || s.isEmpty() || id == null) return null;
-		Text t = face.texts.get(s);
-		if (t != null) return t;
+	private static Text parse(String s, Identifier id, int shape) {
 		try {
 			JsonObject json = new JsonObject();
 			json.addProperty("text", s);
-			json.addProperty("font", id.toString());
-			t = TextCodecs.CODEC.parse(JsonOps.INSTANCE, json).result().orElse(null);
+			if (shape == 0) {
+				json.addProperty("font", id.toString());
+			} else {
+				// newer Minecraft versions describe the font as an object
+				JsonObject f = new JsonObject();
+				f.addProperty("type", shape == 1 ? "minecraft:font" : "font");
+				f.addProperty("id", id.toString());
+				json.add("font", f);
+			}
+			return TextCodecs.CODEC.parse(JsonOps.INSTANCE, json).result().orElse(null);
 		} catch (Throwable e) {
-			t = null;
+			return null;
+		}
+	}
+
+	private static Text styled(Face face, Identifier id, String s) {
+		if (s == null || s.isEmpty() || id == null) return null;
+		Text t = face.texts.get(s);
+		if (t != null) return t;
+		long now = System.currentTimeMillis();
+		if (now < brokenUntil) return null;
+		if (form >= 0) t = parse(s, id, form);
+		if (t == null) {
+			for (int shape = 0; shape < 3 && t == null; shape++) {
+				t = parse(s, id, shape);
+				if (t != null) {
+					form = shape;
+					if (!reported) LOG.info("[Ray] client font text built with the font form {} (font {})", shape, id);
+					reported = true;
+				}
+			}
 		}
 		if (t == null) {
-			broken = true;
+			brokenUntil = now + 15000L;
+			LOG.warn("[Ray] could not build styled text for font {}; drawing with Minecraft's font for now", id);
 			return null;
 		}
 		face.texts.put(s, t);

@@ -156,8 +156,7 @@ public class HudEditorScreen extends Screen {
 			ui.primary(bx2, by2, mw, 26, "Mods", () -> openMods("ALL", null));
 			boolean gh = ui.over(bx2 + mw + gap2, by2, gw, 26);
 			float gv = ui.anim("hudgear", gh);
-			ui.rrect(bx2 + mw + gap2, by2, gw, 26, 13, Theme.mix(Ui.white(0.07f), Theme.fade(accent, 0.35f), gv));
-			ui.rimGlass(bx2 + mw + gap2, by2, gw, 26, 13, 0.26f + 0.16f * gv, 0.07f);
+			ui.rrect(bx2 + mw + gap2, by2, gw, 26, 5, Theme.mix(Ui.white(0.07f), Theme.fade(accent, 0.35f), gv));
 			ui.gearIcon(bx2 + mw + gap2 + 10, by2 + 10, Theme.mix(Theme.DIM, 0xFFFFFFFF, gv));
 			ui.click("hudsettings", bx2 + mw + gap2, by2, gw, 26, () -> openMods("ALL", "SETTINGS"));
 		}

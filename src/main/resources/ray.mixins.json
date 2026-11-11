@@ -17,6 +17,8 @@
     "ScreenBackgroundMixin",
     "OverlayTextureMixin",
     "FontManagerMixin",
+    "FontStoragesMixin",
+    "FontOverridesMixin",
     "InGameOverlayRendererMixin",
     "ClientWorldSkyMixin",
     "FogColorMixin",

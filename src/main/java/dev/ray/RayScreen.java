@@ -235,8 +235,8 @@ public class RayScreen extends Screen {
 		}
 		int trackW = total + 8;
 		int trackX = Math.max(px + 176, px + (pw - trackW) / 2);
-		ui.rrect(trackX, ty, trackW, th, th / 2, Ui.white(0.045f));
-		ui.ring(trackX, ty, trackW, th, th / 2, Ui.white(0.10f));
+		ui.rrect(trackX, ty, trackW, th, 6, Ui.white(0.045f));
+		ui.ring(trackX, ty, trackW, th, 6, Ui.white(0.10f));
 		int x = trackX + 4;
 		int selX = x, selW = widths[0];
 		for (int i = 0; i < PAGES.length; i++) {
@@ -248,7 +248,7 @@ public class RayScreen extends Screen {
 		}
 		float gx = ui.animTo("tabx", selX), gw = ui.animTo("tabw", selW);
 		int ix = Math.round(gx), iw = Math.round(gw);
-		ui.rrect(ix, ty + 3, iw, th - 6, (th - 6) / 2, Ui.white(0.14f));
+		ui.rrect(ix, ty + 3, iw, th - 6, 5, Ui.white(0.14f));
 		x = trackX + 4;
 		for (int i = 0; i < PAGES.length; i++) {
 			final int idx = i;
@@ -264,8 +264,7 @@ public class RayScreen extends Screen {
 		int cx = px + pw - 40, cy = py + (HEADER_H - 26) / 2;
 		boolean chov = ui.over(cx, cy, 26, 26);
 		float cv = ui.anim("closebtn", chov);
-		ui.rrect(cx, cy, 26, 26, 13, Theme.mix(Ui.white(0.06f), Theme.fade(Theme.BAD, 0.55f), cv));
-		ui.rimGlass(cx, cy, 26, 26, 13, 0.22f + 0.2f * cv, 0.06f);
+		ui.rrect(cx, cy, 26, 26, 6, Theme.mix(Ui.white(0.06f), Theme.fade(Theme.BAD, 0.55f), cv));
 		ui.closeIcon(cx + 9, cy + 9, Theme.mix(Theme.DIM, 0xFFFFFFFF, cv));
 		ui.click("close", cx, cy, 26, 26, this::close);
 	}
@@ -303,7 +302,7 @@ public class RayScreen extends Screen {
 
 	private int filterChip(int x, int y, String label) {
 		boolean active = filter.equals(label);
-		int w = ui.w(nice(label)) + 14, h = 20, cr = 8;
+		int w = ui.w(nice(label)) + 14, h = 20, cr = 5;
 		float hv = ui.anim("fc" + label, ui.over(x, y, w, h));
 		float on = ui.anim("fcon" + label, active);
 		if (on > 0.05f) ui.glow(x, y, w, h, cr, Theme.accent(), on * 0.5f);
@@ -336,8 +335,8 @@ public class RayScreen extends Screen {
 		float focus = ui.anim("searchfocus", search.isFocused());
 		float shv = ui.anim("searchhov", ui.over(sx, sy, sw, sh));
 		if (focus > 0.05f) ui.glow(sx, sy, sw, sh, sh / 2, Theme.accent(), focus * 0.7f);
-		ui.rrect(sx, sy, sw, sh, sh / 2, Ui.white(0.045f + 0.03f * Math.max(focus, shv)));
-		ui.ring(sx, sy, sw, sh, sh / 2, Theme.mix(Ui.white(0.10f + 0.08f * shv), Theme.fade(Theme.accent(), 0.9f), focus));
+		ui.rrect(sx, sy, sw, sh, 5, Ui.white(0.045f + 0.03f * Math.max(focus, shv)));
+		ui.ring(sx, sy, sw, sh, 5, Theme.mix(Ui.white(0.10f + 0.08f * shv), Theme.fade(Theme.accent(), 0.9f), focus));
 		ui.searchIcon(sx + 9, sy + 7, Theme.mix(Theme.MUTE, Theme.DIM, Math.max(focus, shv)));
 		search.setX(sx + 24);
 		search.setY(sy + 7);
@@ -346,8 +345,8 @@ public class RayScreen extends Screen {
 
 		int vx = sx - 8 - 28;
 		float vv = ui.anim("viewsw", ui.over(vx, sy, 28, sh));
-		ui.rrect(vx, sy, 28, sh, sh / 2, Ui.white(0.05f + 0.05f * vv));
-		ui.ring(vx, sy, 28, sh, sh / 2, Theme.mix(Ui.white(0.11f), Theme.fade(Theme.accent(), 0.7f), vv * 0.7f));
+		ui.rrect(vx, sy, 28, sh, 5, Ui.white(0.05f + 0.05f * vv));
+		ui.ring(vx, sy, 28, sh, 5, Theme.mix(Ui.white(0.11f), Theme.fade(Theme.accent(), 0.7f), vv * 0.7f));
 		if (cfg.listView) ui.listIcon(vx + 9, sy + 8, Theme.mix(Theme.DIM, 0xFFFFFFFF, vv));
 		else ui.dotsIcon(vx + 10, sy + 7, Theme.mix(Theme.DIM, 0xFFFFFFFF, vv));
 		ui.click("viewsw", vx, sy, 28, sh, () -> {
@@ -506,8 +505,8 @@ public class RayScreen extends Screen {
 			boolean hov = ui.over(rx, ry, rw, rowH);
 			float hv = ui.anim("prof" + pn, hov);
 			float sv = ui.anim("profsel" + pn, sel);
-			ui.rrect(rx, ry, rw, rowH, 9, Ui.white(0.05f + 0.04f * hv + 0.06f * sv));
-			if (sv > 0.05f) ui.ring(rx, ry, rw, rowH, 9, Theme.fade(accent, 0.7f * sv));
+			ui.rrect(rx, ry, rw, rowH, 6, Ui.white(0.05f + 0.04f * hv + 0.06f * sv));
+			if (sv > 0.05f) ui.ring(rx, ry, rw, rowH, 6, Theme.fade(accent, 0.7f * sv));
 			// initial on a little plate
 			ui.plate(rx + 5, ry + 5, 18, sel ? accent : 0xFF8A8A98, Math.max(sv, 0.25f));
 			String initial = pn.isEmpty() ? "?" : pn.substring(0, 1).toUpperCase();
@@ -631,7 +630,7 @@ public class RayScreen extends Screen {
 		int ly = y - Math.round(hv * 1.5f);
 		int accent = Theme.accent(), accent2 = Theme.accent2();
 		long now = System.currentTimeMillis();
-		int r = 9;
+		int r = 6;
 
 				// a plain glass tile; "on" is shown by the status dot and text, not by tinting the whole tile
 		ui.rrect(x, ly, w, h, r, Theme.fade(Ui.white(0.055f + 0.035f * hv + 0.03f * ov), ap));
@@ -702,8 +701,8 @@ public class RayScreen extends Screen {
 		boolean on = c.on.getAsBoolean();
 		float hv = ui.anim("row" + c.id, hov), ov = ui.anim("rowon" + c.id, on);
 		int accent = Theme.accent();
-		ui.rrect(x, y, w, h, 9, Theme.fade(Ui.white(0.055f + 0.035f * hv + 0.03f * ov), ap));
-		if (hv > 0.04f) ui.ring(x, y, w, h, 9, Theme.fade(Ui.white(0.16f * hv), ap));
+		ui.rrect(x, y, w, h, 6, Theme.fade(Ui.white(0.055f + 0.035f * hv + 0.03f * ov), ap));
+		if (hv > 0.04f) ui.ring(x, y, w, h, 6, Theme.fade(Ui.white(0.16f * hv), ap));
 		int ps = h - 10;
 		ui.plate(x + 5, y + 5, ps, on ? accent : 0xFF8A8A98, 0.25f + 0.75f * ov);
 		if (ap > 0.5f) ui.ctx.drawItem(c.icon(), x + 5 + (ps - 16) / 2, y + 5 + (ps - 16) / 2);

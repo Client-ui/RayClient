@@ -54,12 +54,15 @@ public final class FontOverride {
 
 	/** True if this Minecraft version let the font hook attach. */
 	public static boolean supported() {
-		return manager instanceof RayFontAccess;
+		return manager instanceof RayFontOverrides;
 	}
 
 	/** True if the font in this slot was loaded from the resources. */
 	public static boolean loaded(int index) {
-		return index >= 0 && index < IDS.length && manager instanceof RayFontAccess a && a.ray$has(Identifier.of("ray", IDS[index]));
+		if (index < 0 || index >= IDS.length) return false;
+		// the fonts that ship inside the mod are always there; only "My own font" (a separate resource pack) needs checking
+		if (index < IDS.length - 1) return true;
+		return manager instanceof RayFontAccess a && a.ray$has(Identifier.of("ray", IDS[index]));
 	}
 
 	private static final Identifier[] FONT_IDS = new Identifier[IDS.length];
@@ -107,20 +110,22 @@ public final class FontOverride {
 		long now = System.currentTimeMillis();
 		if (headAt < 0L || now - headAt > 500L) {
 			headAt = now;
-			headCached = manager instanceof RayFontAccess a && a.ray$has(HEAD_ID) ? HEAD_ID : null;
+			headCached = HEAD_ID; // ships inside the mod
 		}
 		return headCached;
 	}
 
 	/** Applies the Minecraft Font setting. Cheap; safe to call every tick. */
 	public static void update() {
-		if (!(manager instanceof RayFontAccess access)) return;
+		if (!(manager instanceof RayFontOverrides access)) return;
 		RayConfig c = RayConfig.get();
 		Identifier want = null;
 		// index 0 is Minecraft's own font: choosing it means "no change"
 		if (c.minecraftFontOn && c.minecraftFont > 0 && c.minecraftFont < IDS.length) {
 			Identifier id = Identifier.of("ray", IDS[c.minecraftFont]);
-			if (access.ray$has(id)) want = id;
+			// bundled fonts are always present; the custom font (a separate resource pack) must really be loaded, because
+			// mapping the default font to a font that does not exist would turn all text into boxes
+			if (c.minecraftFont < IDS.length - 1 || (manager instanceof RayFontAccess a && a.ray$has(id))) want = id;
 		}
 
 		if (want == null) {

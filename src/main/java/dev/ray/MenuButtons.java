@@ -33,7 +33,7 @@ public final class MenuButtons {
 		boolean hero = pause && text.startsWith("Ray Client");
 		float hv = UI.anim(id, hovered && active);
 		float fv = UI.anim(id + "f", focused && active);
-		int r = Math.min(h / 2, 9);
+		int r = 5;
 		if (hero) {
 			UI.accentFill(x, y, w, h, r, hv);
 			int lh = Math.max(12, h - 10);

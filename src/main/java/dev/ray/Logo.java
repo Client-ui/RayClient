@@ -68,7 +68,7 @@ public final class Logo {
 	private static Baked bake(int h) {
 		Baked b = CACHE.get(h);
 		if (b != null) return b;
-		if (CACHE.size() > 24) CACHE.clear();
+		if (CACHE.size() > 12) CACHE.clear();
 		b = new Baked();
 		b.h = h;
 		b.w = width(h);
@@ -119,7 +119,7 @@ public final class Logo {
 					int x0 = x;
 					while (x < b.w && Math.round(Math.min(1f, cov[x]) * LEVELS) == q) x++;
 					// horizontal gradients: cut long runs so the colour changes smoothly along them
-					int step = sh.kind == 1 ? 4 : 100000;
+					int step = sh.kind == 1 ? Math.max(4, h / 14) : 100000;
 					for (int a = x0; a < x; a += step) runs.add(new int[]{row, a, Math.min(x, a + step), q});
 				}
 			}
@@ -135,10 +135,20 @@ public final class Logo {
 		return Theme.mix(a, b, t);
 	}
 
-	/** Draws the logo h pixels tall with its top-left corner at (x, y). alpha is 0..1. */
+	/**
+	 * Draws the logo h units tall with its top-left corner at (x, y). alpha is 0..1.
+	 *
+	 * One layout unit is several real screen pixels (GUI scale times the menu scale), so rasterising at one run per unit
+	 * makes every soft edge pixel a visible block and the logo looks blurry. It is rasterised at 3 to 4 times that
+	 * resolution instead and drawn scaled back down, so its edges are anti-aliased at about real-pixel size.
+	 */
 	public static void draw(DrawContext ctx, int x, int y, int h, float alpha) {
 		if (h < 6 || alpha <= 0.01f) return;
-		Baked b = bake(h);
+		int f = h <= 20 ? 4 : h <= 40 ? 3 : 2;
+		Baked b = bake(h * f);
+		ctx.getMatrices().pushMatrix();
+		ctx.getMatrices().translate((float) x, (float) y);
+		ctx.getMatrices().scale(1f / f, 1f / f);
 		for (int si = 0; si < SHAPES.length; si++) {
 			Shape sh = SHAPES[si];
 			int[] r = b.runs[si];
@@ -147,9 +157,10 @@ public final class Logo {
 				int c = lerp(sh.c1, sh.c2, t);
 				int a = Math.round(255f * alpha * r[i + 3] / LEVELS);
 				if (a <= 0) continue;
-				ctx.fill(x + r[i + 1], y + r[i], x + r[i + 2], y + r[i] + 1, (a << 24) | (c & 0xFFFFFF));
+				ctx.fill(r[i + 1], r[i], r[i + 2], r[i] + 1, (a << 24) | (c & 0xFFFFFF));
 			}
 		}
+		ctx.getMatrices().popMatrix();
 	}
 
 	/** Same, centred on cx. */
