@@ -40,7 +40,7 @@ public class RayScreen extends Screen {
 	private static final Set<String> NEW_IDS = Set.of("f_crosshair", "f_sky", "f_lyrics", "f_hitbox", "f_sideshield", "minimap");
 
 	private static final int DESIGN_W = 760, DESIGN_H = 450;
-	private static final int HEADER_H = 44, SIDE_W = 160, TILE_H = 50, GAP = 10;
+	private static final int HEADER_H = 44, SIDE_W = 160, TILE_H = 118, GAP = 10;
 
 	private static int page = 0;
 	private static String filter = "ALL";
@@ -221,9 +221,9 @@ public class RayScreen extends Screen {
 		int lh = 28;
 		Logo.draw(ui.ctx, px + 16, py + (HEADER_H - lh) / 2, lh, 1f);
 		int lx = px + 16 + Logo.width(lh) + 9, ly = py + (HEADER_H - 10) / 2;
-		int rw = Math.round(ui.headWidth("Ray") * 1.25f);
-		ui.scaledHead("Ray", lx, ly, 1.25f, Theme.TEXT);
-		ui.scaledHead("Client", lx + rw + 4, ly, 1.25f, Theme.DIM);
+		ui.spaced("RAY", lx, ly + 1, Theme.TEXT, 2);
+		int rw = ui.spacedWidth("RAY", 2);
+		ui.spaced("CLIENT", lx + rw + 8, ly + 1, Theme.DIM, 2);
 
 		// page tabs: a glass capsule with a highlight that glides to the selected tab
 		int padX = 14, th = 26, ty = py + (HEADER_H - th) / 2;
@@ -401,7 +401,7 @@ public class RayScreen extends Screen {
 		int footH = 28;
 		int gh = bodyY + innerH - footH - gy;
 		int gw = innerW - 8;
-		int cols = list ? 1 : cfg.menuCols > 0 ? cfg.menuCols : Math.max(2, Math.min(5, (gw + GAP) / (170 + GAP)));
+		int cols = list ? 1 : cfg.menuCols > 0 ? cfg.menuCols : Math.max(2, Math.min(5, (gw + GAP) / (150 + GAP)));
 		int itemH = list ? 34 : TILE_H;
 		int gap = list ? 6 : GAP;
 		int cardWd = (gw - (cols - 1) * gap) / cols;
@@ -555,7 +555,8 @@ public class RayScreen extends Screen {
 			}
 		});
 		boolean inGame = client.world != null;
-		ui.pill(x + 10, editY, w - 20, btnH, inGame ? "Edit HUD layout" : "Join a world to edit", accent, inGame, () -> client.setScreen(new HudEditorScreen()));
+		if (inGame) ui.primary(x + 10, editY, w - 20, btnH, "Edit HUD layout", () -> client.setScreen(new HudEditorScreen()));
+		else ui.pill(x + 10, editY, w - 20, btnH, "Join a world to edit", accent, false, () -> {});
 	}
 
 	// ---------- tooltip ----------
@@ -627,68 +628,59 @@ public class RayScreen extends Screen {
 		if (hov) hovCard = c;
 		boolean on = c.on.getAsBoolean();
 		float hv = ui.anim("card" + c.id, hov), ov = ui.anim("cardon" + c.id, on);
-		int ly = y - Math.round(hv * 1.5f);
-		int accent = Theme.accent(), accent2 = Theme.accent2();
+		int accent = Theme.accent();
 		long now = System.currentTimeMillis();
-		int r = 6;
+		int r = 6, pad = 6, cx = x + w / 2;
 
-				// a plain glass tile; "on" is shown by the status dot and text, not by tinting the whole tile
-		ui.rrect(x, ly, w, h, r, Theme.fade(Ui.white(0.055f + 0.035f * hv + 0.03f * ov), ap));
-		if (hv > 0.04f) ui.ring(x, ly, w, h, r, Theme.fade(Ui.white(0.16f * hv), ap));
-
-		// a quick expanding ring when the module is switched
+		// a tall card: big icon, name, then an Options button and the Enabled bar
+		ui.rrect(x, y, w, h, r, Theme.fade(Ui.white(0.055f + 0.035f * hv), ap));
+		if (hv > 0.04f) ui.ring(x, y, w, h, r, Theme.fade(Ui.white(0.16f * hv), ap));
 		Long fl = flashAt.get(c.id);
 		if (fl != null) {
 			float ft = (now - fl) / 420f;
 			if (ft >= 1f) flashAt.remove(c.id);
 			else {
-				int e = Math.round(Theme.easeOutCubic(ft) * 8f);
-				ui.ring(x - e, ly - e, w + 2 * e, h + 2 * e, r + e, Theme.fade(accent, 0.7f * (1f - ft)));
+				int e = Math.round(Theme.easeOutCubic(ft) * 6f);
+				ui.ring(x - e, y - e, w + 2 * e, h + 2 * e, r + e, Theme.fade(accent, 0.7f * (1f - ft)));
 			}
 		}
-
-		// icon plate
-		int ps = h - 16;
-		ui.plate(x + 8, ly + 8, ps, on ? accent : 0xFF8A8A98, 0.25f + 0.75f * ov);
-		if (ap > 0.5f) ui.ctx.drawItem(c.icon(), x + 8 + (ps - 16) / 2, ly + 8 + (ps - 16) / 2);
-
-		// name + status line
-		int tx = x + 8 + ps + 11, tw = w - (tx - x) - 30;
-		String name = ui.fit(c.name, tw);
-		int ty = ly + 11;
-		ui.text(name, tx, ty, Theme.fade(Theme.mix(Theme.mix(Theme.DIM, 0xFFFFFFFF, 0.5f), 0xFFFFFFFF, Math.max(hv, ov * 0.7f)), ap));
-		if (NEW_IDS.contains(c.id)) ui.badge(tx + ui.w(name) + 4, ty - 1, "NEW", Theme.fade(accent, ap), Theme.fade(Ui.onAccent(), ap));
-		String status = on ? "On" : "Off";
-		ui.circle(tx + 2, ly + 31, 2, Theme.fade(on ? accent : Theme.MUTE, ap));
-		ui.scaledText(status, tx + 8, ly + 28, 0.85f, Theme.fade(on ? accent : Theme.MUTE, ap), false);
-		if (on && ap > 0.9f) {
-			String live = previewFor(c, now);
-			if (live != null && !live.isEmpty()) {
-				int sw2 = Math.round(ui.w(status) * 0.85f) + 14;
-				ui.scaledText(ui.fit(live, Math.max(10, Math.round((tw - sw2) / 0.85f))), tx + sw2, ly + 28, 0.85f, Theme.fade(Theme.DIM, 0.95f * ap), false);
-			}
+		if (ap > 0.5f) {
+			ui.ctx.getMatrices().pushMatrix();
+			ui.ctx.getMatrices().translate((float) (cx - 18), (float) (y + 11));
+			ui.ctx.getMatrices().scale(2.25f, 2.25f);
+			ui.ctx.drawItem(c.icon(), 0, 0);
+			ui.ctx.getMatrices().popMatrix();
 		}
+		String nm = ui.fit(c.name, w - 16);
+		ui.center(nm, cx, y + 52, Theme.fade(Theme.mix(Theme.DIM, 0xFFFFFFFF, Math.max(hv * 0.8f, ov * 0.6f)), ap));
+		if (NEW_IDS.contains(c.id)) ui.badge(x + 6, y + 6, "NEW", Theme.fade(accent, ap), Theme.fade(Ui.onAccent(), ap));
 
-		// settings cog
-		int gxz = x + w - 28;
-		boolean ghov = ui.over(gxz, y, 28, h);
-		float gv = ui.anim("gear" + c.id, ghov);
-		if (gv > 0.02f) ui.circle(gxz + 13, ly + h / 2, 10, Theme.fade(0xFFFFFFFF, 0.08f * gv * ap));
-		ui.gearIcon(gxz + 10, ly + h / 2 - 3, Theme.fade(Theme.mix(Theme.MUTE, 0xFFFFFFFF, Math.max(gv, hv * 0.5f)), ap));
-		ui.hit("gearhit" + c.id, gxz, y + 12, 28, h - 12, () -> client.setScreen(c.settings.apply(this)), null, null);
+		// buttons along the bottom
+		int rowW = w - pad * 2, bh = 22;
+		int oy = y + h - pad - bh - 4 - bh, ey = y + h - pad - bh;
+		int favW = 24, optW = rowW - favW - 4, ox = x + pad;
+		float oh = ui.anim("opt" + c.id, ui.over(ox, oy, optW, bh));
+		ui.rrect(ox, oy, optW, bh, 4, Theme.fade(Ui.white(0.07f + 0.06f * oh), ap));
+		int ow = ui.spacedWidth("OPTIONS", 2);
+		ui.spaced("OPTIONS", ox + (optW - ow) / 2, oy + 7, Theme.fade(Theme.mix(Theme.DIM, 0xFFFFFFFF, oh), ap), 2);
+		ui.hit("copt" + c.id, ox, oy, optW, bh, () -> client.setScreen(c.settings.apply(this)), null, null);
 
-		// favourite heart (corner; shows on hover, or always when favourited)
+		int fx = ox + optW + 4;
 		boolean fav = c.favorite();
-		int hx = x + w - 17, hy = y + 3;
-		boolean hhov = ui.over(hx - 2, hy, 16, 14);
-		float hh = ui.anim("heart" + c.id, hhov);
-		if (fav || hv > 0.05f) {
-			float vis = fav ? 1f : hv;
-			ui.heart(hx, ly + 6, Theme.fade(fav ? 0xFFFF7A9A : Theme.mix(0x66FFFFFF, 0xFFFFFFFF, hh), vis * ap));
-		}
-		ui.hit("fav" + c.id, hx - 2, hy, 16, 14, c::toggleFavorite, null, null);
+		float fh = ui.anim("cfav" + c.id, ui.over(fx, oy, favW, bh));
+		ui.rrect(fx, oy, favW, bh, 4, Theme.fade(Ui.white(0.07f + 0.06f * fh), ap));
+		ui.heart(fx + 8, oy + 8, Theme.fade(fav ? 0xFFFF7A9A : Theme.mix(0xFF6E6E7C, 0xFFFFFFFF, fh), ap));
+		ui.hit("cfavhit" + c.id, fx, oy, favW, bh, c::toggleFavorite, null, null);
 
-		// click anywhere else toggles, right-click opens the settings
+		float eh = ui.anim("cen" + c.id, ui.over(ox, ey, rowW, bh));
+		if (on) ui.accentFill(ox, ey, rowW, bh, 4, eh);
+		else ui.rrect(ox, ey, rowW, bh, 4, Theme.fade(Ui.white(0.07f + 0.05f * eh), ap));
+		String st = on ? "ENABLED" : "DISABLED";
+		int sw = ui.spacedWidth(st, 2);
+		ui.spaced(st, ox + (rowW - sw) / 2, ey + 7, Theme.fade(on ? Ui.onAccent() : Theme.mix(Theme.MUTE, 0xFFFFFFFF, eh), ap), 2);
+		ui.hit("cenhit" + c.id, ox, ey, rowW, bh, () -> toggleCard(c), null, null);
+
+		// the rest of the card: click toggles, right-click opens the settings
 		ui.hit("card" + c.id, x, y, w, h, () -> toggleCard(c), () -> client.setScreen(c.settings.apply(this)), null);
 	}
 

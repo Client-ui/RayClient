@@ -1,6 +1,8 @@
 package dev.ray;
 
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
@@ -61,6 +63,13 @@ public class HudEditorScreen extends Screen {
 		Toasts.push("HUD arranged");
 	}
 
+	/** A small round corner button on a module while editing: a gear (settings) or a minus (turn off). */
+	private void corner(DrawContext ctx, int cx, int cy, int color, boolean minus, boolean hover) {
+		ui.circle(cx, cy, 6, hover ? Theme.mix(color, 0xFFFFFFFF, 0.28f) : color);
+		if (minus) ctx.fill(cx - 3, cy, cx + 3, cy + 1, 0xFFFFFFFF);
+		else ui.gearIcon(cx - 3, cy - 3, 0xFFFFFFFF);
+	}
+
 	private void openMods(String filter, String pageName) {
 		RayScreen.selectPage("MODS");
 		RayScreen.selectFilter(filter);
@@ -95,31 +104,42 @@ public class HudEditorScreen extends Screen {
 		// toolbar geometry (needed first so clicks on it do not start a drag)
 		float ts = Math.min(1.0f, UiScale.fit(width, height, 520, 200, 100));
 		int tvw = UiScale.view(width, ts), tvh = UiScale.view(height, ts);
-		int tbW = Math.min(400, tvw - 12), tbH = 54;
-		int tbX = (tvw - tbW) / 2, tbY = tvh - tbH - 12;
-		int rx = Math.round(tbX * ts), ry = Math.round(tbY * ts), rw = Math.round(tbW * ts), rh = Math.round(tbH * ts);
-		// centre cluster: logo, name and the Mods / Settings buttons (virtual units of the same scale)
-		int clW = 150, clH = 112;
+		// the centre cluster (logo, settings button, four icon buttons), in virtual units of the same scale
+		int clW = 176, clH = 132;
 		int clX = (tvw - clW) / 2, clY = (tvh - clH) / 2;
 		int crx = Math.round(clX * ts), cry = Math.round(clY * ts), crw = Math.round(clW * ts), crh = Math.round(clH * ts);
-		boolean overToolbar = inside(mouseX, mouseY, rx, ry, rw, rh) || inside(mouseX, mouseY, crx, cry, crw, crh);
+		boolean overToolbar = inside(mouseX, mouseY, crx, cry, crw, crh);
 
 		ui.begin(ctx, textRenderer, mouseX, mouseY);
+		HudModule hotModule = null;
 		for (HudModule m : active) {
 			m.render(ctx, client, textRenderer);
-			boolean hot = m == dragging || (dragging == null && !overToolbar && inside(mouseX, mouseY, m.x, m.y, m.ew(), m.eh()));
+			int mw = m.ew(), mh = m.eh();
+			boolean hot = m == dragging || (dragging == null && !overToolbar && inside(mouseX, mouseY, m.x - 6, m.y - 2, mw + 12, mh + 9));
 			float hv = ui.anim("hm" + m.id, hot);
-			if (hv > 0.02f) ctx.fill(m.x, m.y, m.x + m.ew(), m.y + m.eh(), Theme.fade(0xFFFFFFFF, 0.08f * hv));
-			ui.ring(m.x - 2, m.y - 2, m.ew() + 4, m.eh() + 4, 3, hot ? 0xFFFFFFFF : Theme.fade(accent, 0.7f));
-			if (hot) {
-				String tag = m == dragging ? m.name + "  " + m.x + ", " + m.y : m.name;
+			if (hv > 0.02f) ctx.fill(m.x, m.y, m.x + mw, m.y + mh, Theme.fade(0xFFFFFFFF, 0.07f * hv));
+			ui.ring(m.x - 2, m.y - 2, mw + 4, mh + 4, 3, Theme.mix(Ui.white(0.28f), 0xFFFFFFFF, hv));
+			// under the cursor: the module's name sits under it (above it at the bottom edge), with a settings (accent)
+			// button bottom-left and a turn-off (red) button bottom-right. Only the hovered module shows them, so closely
+			// stacked modules never cover each other with labels.
+			if (hot) hotModule = m;
+			if (m == dragging) {
+				String tag = m.x + ", " + m.y;
 				int tw = ui.w(tag) + 12;
 				int tx = Math.max(2, Math.min(width - tw - 2, m.x));
-				int ty = m.y - 18 >= 2 ? m.y - 18 : m.y + m.eh() + 4;
-				ui.shadow(tx, ty, tw, 14, 5);
-				ui.glassPanel(tx, ty, tw, 14, 6, 0xF024242C, 0xF010101A, 0.40f, 0.12f);
+				int ty = m.y - 18 >= 2 ? m.y - 18 : m.y + mh + 4;
+				ui.rrect(tx, ty, tw, 14, 5, 0xF0101014);
+				ui.ring(tx, ty, tw, 14, 5, Ui.white(0.14f));
 				ui.text(tag, tx + 6, ty + 3, 0xFFFFFFFF);
 			}
+		}
+		if (hotModule != null) { // drawn last so it sits on top of the modules around it
+			HudModule m = hotModule;
+			int mw = m.ew(), mh = m.eh();
+			int nameY = m.y + mh + 16 <= height ? m.y + mh + 9 : m.y - 12;
+			ClientFont.draw(ctx, textRenderer, m.name, m.x, nameY, 0xFFFFFFFF, true);
+			corner(ctx, m.x + 2, m.y + mh, Theme.accent(), false, inside(mouseX, mouseY, m.x - 5, m.y + mh - 7, 14, 14));
+			corner(ctx, m.x + mw - 2, m.y + mh, Theme.BAD, true, inside(mouseX, mouseY, m.x + mw - 9, m.y + mh - 7, 14, 14));
 		}
 		// guide lines while dragging
 		if (dragging != null) {
@@ -127,57 +147,63 @@ public class HudEditorScreen extends Screen {
 			if (guideY >= 0) ctx.fill(0, guideY, width, guideY + 1, Theme.fade(accent, 0.65f));
 		}
 
-		// title
-		String title = "HUD Editor";
+		// one quiet line of help at the top
 		String hint = "Drag to move   -   Right-click for settings   -   ESC to close";
-		int hw = Math.max(ui.headWidth(title), ui.w(hint)) + 40;
-		int hx = (width - hw) / 2, hy = 8 - Math.round((1f - open) * 20f);
-		ui.shadow(hx, hy, hw, 34, 9);
-		ui.glassPanel(hx, hy, hw, 34, 12, 0xF026262E, 0xF010101A, 0.34f, 0.08f);
-		ui.headCenter(title, width / 2, hy + 6, 0xFFFFFFFF);
-		
-		ui.center(hint, width / 2, hy + 22, Theme.DIM);
+		ClientFont.draw(ctx, textRenderer, hint, (width - ui.w(hint)) / 2, 10 - Math.round((1f - open) * 14f), Theme.fade(0xFFFFFFFF, 0.7f * open), true);
 
-		// toolbar (scaled)
 		ctx.getMatrices().pushMatrix();
 		ctx.getMatrices().scale(ts, ts);
 		ui.begin(ctx, textRenderer, UiScale.mouse(mouseX, ts), UiScale.mouse(mouseY, ts));
-		// ---- centre cluster ----
 		{
 			int ccx = tvw / 2;
 			int top = clY + Math.round((1f - open) * -14f);
-			int lh = 54;
+			int lh = 46;
 			Brand.logo(ctx, ccx, top, lh, open, now);
-			String nm = "Ray Client";
-			int nw = Math.round(ui.headWidth(nm) * 1.3f);
-			ui.scaledHead(nm, ccx - nw / 2, top + lh + 6, 1.3f, Theme.fade(0xFFFFFFFF, open));
-			int by2 = top + lh + 24, mw = 92, gw = 26, gap2 = 6;
-			int bx2 = ccx - (mw + gap2 + gw) / 2;
-			ui.primary(bx2, by2, mw, 26, "Mods", () -> openMods("ALL", null));
-			boolean gh = ui.over(bx2 + mw + gap2, by2, gw, 26);
-			float gv = ui.anim("hudgear", gh);
-			ui.rrect(bx2 + mw + gap2, by2, gw, 26, 5, Theme.mix(Ui.white(0.07f), Theme.fade(accent, 0.35f), gv));
-			ui.gearIcon(bx2 + mw + gap2 + 10, by2 + 10, Theme.mix(Theme.DIM, 0xFFFFFFFF, gv));
-			ui.click("hudsettings", bx2 + mw + gap2, by2, gw, 26, () -> openMods("ALL", "SETTINGS"));
-		}
 
-		int ty0 = tbY + Math.round((1f - open) * 30f);
-		ui.shadow(tbX, ty0, tbW, tbH, 10);
-		ui.glassPanel(tbX, ty0, tbW, tbH, 14, 0xF026262E, 0xF010101A, 0.34f, 0.08f);
-		int bx = tbX + 10, by = ty0 + 10, bh = 34, gap = 6;
-		int free = tbW - 20 - gap * 3;
-		int w2 = free * 22 / 100, w3 = free * 24 / 100, w4 = free * 34 / 100, w5 = free - w2 - w3 - w4;
-		ui.pill(bx, by, w2, bh, "Visuals", 0xFFB8B8C8, true, () -> openMods("VISUAL", null));
-		bx += w2 + gap;
-		ui.pill(bx, by, w3, bh, "Profiles", 0xFFB8B8C8, true, () -> openMods("ALL", "PROFILES"));
-		bx += w3 + gap;
-		ui.pill(bx, by, w4, bh, "Auto arrange", 0xFFB8B8C8, true, () -> autoArrange(active));
-		bx += w4 + gap;
-		ui.pill(bx, by, w5, bh, "Reset", Theme.BAD, true, () -> {
-			cfg.positions.clear();
-			RayConfig.save();
-			Toasts.push("HUD positions reset");
-		});
+			// one dark settings button, like a game's own menu button
+			int bw = 124, bh2 = 26, bx2 = ccx - bw / 2, by2 = top + lh + 12;
+			float bv = ui.anim("hudmain", ui.over(bx2, by2, bw, bh2));
+			ui.rrect(bx2, by2, bw, bh2, 5, Theme.mix(0xF0101014, 0xF01C1C22, bv));
+			ui.ring(bx2, by2, bw, bh2, 5, Ui.white(0.10f + 0.10f * bv));
+			String lbl = "RAY SETTINGS";
+			ui.spaced(lbl, ccx - ui.spacedWidth(lbl, 2) / 2, by2 + 9, 0xFFFFFFFF, 2);
+			ui.click("hudmain", bx2, by2, bw, bh2, () -> openMods("ALL", null));
+
+			// four small icon buttons
+			final int ib = 36, ig = 8;
+			int ix0 = ccx - (4 * ib + 3 * ig) / 2, iy = by2 + bh2 + 8;
+			String[] names = {"Visuals", "Profiles", "Auto arrange", "Reset HUD"};
+			ItemStack[] icons = {new ItemStack(Items.ENDER_EYE), new ItemStack(Items.CHEST), new ItemStack(Items.COMPARATOR), new ItemStack(Items.BARRIER)};
+			Runnable[] acts = {
+				() -> openMods("VISUAL", null),
+				() -> openMods("ALL", "PROFILES"),
+				() -> autoArrange(active),
+				() -> {
+					cfg.positions.clear();
+					RayConfig.save();
+					Toasts.push("HUD positions reset");
+				}
+			};
+			for (int i = 0; i < 4; i++) {
+				int ix = ix0 + i * (ib + ig);
+				boolean ih = ui.over(ix, iy, ib, ib);
+				float iv = ui.anim("hudic" + i, ih);
+				ui.rrect(ix, iy, ib, ib, 5, Theme.mix(0xF0101014, 0xF01C1C22, iv));
+				ui.ring(ix, iy, ib, ib, 5, Ui.white(0.10f + 0.10f * iv));
+				ctx.getMatrices().pushMatrix();
+				ctx.getMatrices().translate((float) (ix + 6), (float) (iy + 6 - Math.round(iv)));
+				ctx.getMatrices().scale(1.5f, 1.5f);
+				ctx.drawItem(icons[i], 0, 0);
+				ctx.getMatrices().popMatrix();
+				ui.click("hudicb" + i, ix, iy, ib, ib, acts[i]);
+				if (ih) {
+					int tw2 = ui.w(names[i]) + 14, tx2 = ix + ib / 2 - tw2 / 2, ty2 = iy + ib + 5;
+					ui.rrect(tx2, ty2, tw2, 15, 5, 0xF0101014);
+					ui.ring(tx2, ty2, tw2, 15, 5, Ui.white(0.14f));
+					ui.text(names[i], tx2 + 7, ty2 + 4, 0xFFFFFFFF);
+				}
+			}
+		}
 		ui.poll();
 		ctx.getMatrices().popMatrix();
 		boolean uiClicked = ui.leftPressed && overToolbar;
@@ -201,6 +227,22 @@ public class HudEditorScreen extends Screen {
 		rightWasDown = rdown;
 
 		if (down && !mouseWasDown && !overToolbar && !uiClicked) {
+			for (int i = active.size() - 1; i >= 0; i--) {
+				HudModule m = active.get(i);
+				if (!inside(mouseX, mouseY, m.x - 6, m.y - 2, m.ew() + 12, m.eh() + 9)) continue;
+				if (inside(mouseX, mouseY, m.x - 5, m.y + m.eh() - 7, 14, 14)) {
+					mouseWasDown = down;
+					client.setScreen(new ModuleSettingsScreen(this, m));
+					return;
+				}
+				if (inside(mouseX, mouseY, m.x + m.ew() - 9, m.y + m.eh() - 7, 14, 14)) {
+					mouseWasDown = down;
+					m.setEnabled(false);
+					RayConfig.save();
+					Toasts.push(m.name + " turned off");
+					return;
+				}
+			}
 			for (int i = active.size() - 1; i >= 0; i--) {
 				HudModule m = active.get(i);
 				if (inside(mouseX, mouseY, m.x, m.y, m.ew(), m.eh())) {
