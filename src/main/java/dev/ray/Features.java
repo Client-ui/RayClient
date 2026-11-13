@@ -147,8 +147,8 @@ public final class Features {
 		java.util.Map.entry("f_hitbox", "Draws a custom-colored box around players you can see."),
 		java.util.Map.entry("f_crosshair", "Replace the crosshair: draw your own, scale it, blend it."),
 		java.util.Map.entry("f_outline", "Outlines the face of the block you are looking at, or the whole block."),
-		java.util.Map.entry("f_mcfont", "Changes the font of Minecraft itself: chat, menus, tooltips."),
-		java.util.Map.entry("f_clientfont", "Changes the font of the client's own menus and HUD."));
+		java.util.Map.entry("f_nametag", "Shows the Ray Client logo in front of the nametag of everyone who uses the client."),
+		java.util.Map.entry("f_mcfont", "A cleaner, sharper font for the whole game: chat, menus, tooltips and the client itself. Turn it on for Minecraft, for Ray Client, or both."));
 
 	private static List<Card> cache;
 
@@ -232,8 +232,9 @@ public final class Features {
 		ICONS.put("f_hitcolor", Items.RED_DYE);
 		ICONS.put("f_lowfire", Items.FIRE_CHARGE);
 		ICONS.put("f_sideshield", Items.SHIELD);
-		ICONS.put("f_clientfont", Items.BOOK);
+		
 		ICONS.put("f_mcfont", Items.NAME_TAG);
+		ICONS.put("f_nametag", Items.NAME_TAG);
 		ICONS.put("f_hitbox", Items.TARGET);
 		ICONS.put("f_deathpoint", Items.SKELETON_SKULL);
 		ICONS.put("deathpos", Items.SKELETON_SKULL);
@@ -489,9 +490,20 @@ public final class Features {
 				f.note("Unlike vanilla's F3+B boxes, the red eye-height line and the look-direction line are optional and off by default. Only players you can actually see are boxed: never through walls, and never invisible ones.");
 			}));
 
-		out.add(feature("f_mcfont", "Minecraft Font", "Visual", "font text typeface chat game vanilla custom ttf otf",
-			() -> RayConfig.get().minecraftFontOn, () -> { RayConfig c = RayConfig.get(); c.minecraftFontOn = !c.minecraftFontOn; },
-			(s, ui, f) -> fontRows(ui, f, false)));
+		out.add(feature("f_nametag", "Nametag", "Extras", "nametag name tag logo ray players client badge",
+			() -> RayConfig.get().nametagOn,
+			() -> RayConfig.get().nametagOn = !RayConfig.get().nametagOn,
+			(s, ui, f) -> nametagRows(ui, f)));
+
+		out.add(feature("f_mcfont", "Better Font", "Visual", "font text typeface chat game vanilla custom ttf otf better sharp inter",
+			() -> RayConfig.get().minecraftFontOn || RayConfig.get().clientFontOn,
+			() -> { // the card's switch turns both uses on or both off
+				RayConfig c = RayConfig.get();
+				boolean any = c.minecraftFontOn || c.clientFontOn;
+				c.minecraftFontOn = !any;
+				c.clientFontOn = !any;
+			},
+			(s, ui, f) -> fontRows(ui, f)));
 
 		out.add(feature("f_lowfire", "Low Fire", "Visual", "fire burning overlay flames screen view lava",
 			() -> RayConfig.get().lowFire, () -> { RayConfig c = RayConfig.get(); c.lowFire = !c.lowFire; },
@@ -725,28 +737,31 @@ public final class Features {
 		f.note(Lyrics.platformNote.isEmpty() ? "Lyrics come from LRCLIB." : Lyrics.platformNote + ". Lyrics come from LRCLIB.");
 	}
 
-	private static void fontRows(Ui ui, Ui.Form f, boolean client) {
+	private static void nametagRows(Ui ui, Ui.Form f) {
 		RayConfig c = RayConfig.get();
-		boolean on = client ? c.clientFontOn : c.minecraftFontOn;
-		int selected = client ? c.clientFont : c.minecraftFont;
-		f.section(client ? "Client Font" : "Minecraft Font");
-		ui.toggle(f.full(), "Enabled", on, () -> {
-			if (client) c.clientFontOn = !c.clientFontOn;
-			else c.minecraftFontOn = !c.minecraftFontOn;
-		});
-		f.note(client
-			? "Client Font is the font of the client's own text: all the Ray menus and your HUD modules (FPS, coordinates...). Minecraft's text is not affected. Leave it on Minecraft default to keep the client looking as it does now."
-			: "Minecraft Font is the font of Minecraft itself: chat, vanilla menus, tooltips, signs, everything except the client's own text, which has its own Client Font setting.");
+		f.section("Ray logo on nametags");
+		ui.toggle(f.full(), "Show the logo on my own nametag", c.nametagSelf, () -> c.nametagSelf = !c.nametagSelf);
+		f.note(Nametags.statusLine());
+		f.note("Servers do not tell players what client you use, so seeing the logo above other Ray Client players needs a small presence server. Set its address as \"nametagServer\" in ray.json (the server folder has one you can run). Only your public player id is shared, and only with that server; with none set, nothing is sent.");
+		ui.button(f.half(), "Open Config Folder", () -> Sys.openFolder(net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir()));
+	}
+
+	private static void fontRows(Ui ui, Ui.Form f) {
+		RayConfig c = RayConfig.get();
+		f.section("Better Font");
+		ui.toggle(f.full(), "Use it in Minecraft (chat, menus, signs, tooltips)", c.minecraftFontOn, () -> c.minecraftFontOn = !c.minecraftFontOn);
+		ui.toggle(f.full(), "Use it in Ray Client (menus and HUD)", c.clientFontOn, () -> c.clientFontOn = !c.clientFontOn);
+		f.note("Both are on by default. The font is drawn at the detail that matches your screen size, so small text stays sharp at any GUI scale or Menu Size. Turning Minecraft off brings back the original pixel font (needs the font hook, see below).");
 		if (!FontOverride.supported()) {
-			f.note("The font hook could not attach on this Minecraft version, so fonts will not change. Tell the developer.");
+			f.note("The font hook could not attach on this Minecraft version. The font still applies (it ships as a resource), but switching it off for Minecraft and choosing other faces for Minecraft will not work.");
 		}
 		f.section("Pick a font");
-		for (int i = client ? 0 : 1; i < FontOverride.NAMES.length; i++) { // Minecraft's own font is not an option for itself
+		for (int i = 1; i < FontOverride.NAMES.length; i++) {
 			final int idx = i;
-			String label = FontOverride.NAMES[i] + (FontOverride.supported() && !FontOverride.loaded(i) ? " (not loaded)" : "");
-			ui.toggle(f.half(), label, selected == i, () -> {
-				if (client) c.clientFont = idx;
-				else c.minecraftFont = idx;
+			String label = FontOverride.NAMES[i] + (!FontOverride.loaded(i) ? " (not loaded)" : "");
+			ui.toggle(f.half(), label, c.minecraftFont == i, () -> {
+				c.minecraftFont = idx;
+				c.clientFont = idx;
 			});
 		}
 

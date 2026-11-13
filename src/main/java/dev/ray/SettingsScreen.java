@@ -79,6 +79,7 @@ public abstract class SettingsScreen extends Screen {
 		RayConfig cfg = RayConfig.get();
 		// fits the window whatever the GUI Scale is; follows the Menu Size setting
 		float sc = UiScale.fit(width, height, 500, 340, cfg.menuScale);
+		ClientFont.scale = sc;
 		int viewW = UiScale.view(width, sc), viewH = UiScale.view(height, sc);
 		int mx = UiScale.mouse(mouseX, sc), my = UiScale.mouse(mouseY, sc);
 		long now = System.currentTimeMillis();

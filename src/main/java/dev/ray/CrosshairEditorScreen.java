@@ -91,6 +91,7 @@ public class CrosshairEditorScreen extends Screen {
 		RayConfig cfg = RayConfig.get();
 		int accent = Theme.accent();
 		float sc = UiScale.fit(width, height, 420, 270, cfg.menuScale);
+		ClientFont.scale = sc;
 		int viewW = UiScale.view(width, sc), viewH = UiScale.view(height, sc);
 		int mx = UiScale.mouse(mouseX, sc), my = UiScale.mouse(mouseY, sc);
 		if (client.world != null) ctx.fill(0, 0, width, height, 0x66000000);

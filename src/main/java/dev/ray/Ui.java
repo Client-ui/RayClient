@@ -90,6 +90,7 @@ public final class Ui {
 
 	/** Reads the mouse and dispatches clicks / drags to the widgets drawn this frame. */
 	public void poll() {
+		ClientFont.scale = 1f; // the scaled drawing of this frame is over
 		long win = mc.getWindow().getHandle();
 		left = GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
 		right = GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_RIGHT) == GLFW.GLFW_PRESS;
@@ -736,7 +737,10 @@ public final class Ui {
 		ctx.getMatrices().pushMatrix();
 		ctx.getMatrices().translate((float) x, (float) y);
 		ctx.getMatrices().scale(scale, scale);
+		float oldScale = ClientFont.scale;
+		ClientFont.scale = oldScale * scale; // pick the font detail for the size it is really drawn at
 		ClientFont.drawHead(ctx, tr, s, 0, 0, c, false);
+		ClientFont.scale = oldScale;
 		ctx.getMatrices().popMatrix();
 	}
 
@@ -791,7 +795,10 @@ public final class Ui {
 		ctx.getMatrices().pushMatrix();
 		ctx.getMatrices().translate((float) x, (float) y);
 		ctx.getMatrices().scale(scale, scale);
+		float oldScale = ClientFont.scale;
+		ClientFont.scale = oldScale * scale;
 		ClientFont.draw(ctx, tr, s, 0, 0, c, shadow);
+		ClientFont.scale = oldScale;
 		ctx.getMatrices().popMatrix();
 	}
 

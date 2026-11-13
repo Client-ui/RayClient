@@ -23,7 +23,8 @@
     "ClientWorldSkyMixin",
     "FogColorMixin",
     "SkyRenderingMixin",
-    "PressableWidgetMixin"
+    "PressableWidgetMixin",
+    "EntityDisplayNameMixin"
   ],
   "injectors": {
     "defaultRequire": 0

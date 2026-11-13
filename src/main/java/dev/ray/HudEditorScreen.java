@@ -1,8 +1,6 @@
 package dev.ray;
 
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
@@ -79,6 +77,7 @@ public class HudEditorScreen extends Screen {
 
 	@Override
 	public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+		ClientFont.scale = 1f;
 		RayConfig cfg = RayConfig.get();
 		int accent = Theme.accent();
 		long now = System.currentTimeMillis();
@@ -104,8 +103,8 @@ public class HudEditorScreen extends Screen {
 		// toolbar geometry (needed first so clicks on it do not start a drag)
 		float ts = Math.min(1.0f, UiScale.fit(width, height, 520, 200, 100));
 		int tvw = UiScale.view(width, ts), tvh = UiScale.view(height, ts);
-		// the centre cluster (logo, settings button, four icon buttons), in virtual units of the same scale
-		int clW = 176, clH = 132;
+		// the centre cluster (logo and one settings button), in virtual units of the same scale
+		int clW = 176, clH = 84;
 		int clX = (tvw - clW) / 2, clY = (tvh - clH) / 2;
 		int crx = Math.round(clX * ts), cry = Math.round(clY * ts), crw = Math.round(clW * ts), crh = Math.round(clH * ts);
 		boolean overToolbar = inside(mouseX, mouseY, crx, cry, crw, crh);
@@ -153,6 +152,7 @@ public class HudEditorScreen extends Screen {
 
 		ctx.getMatrices().pushMatrix();
 		ctx.getMatrices().scale(ts, ts);
+		ClientFont.scale = ts;
 		ui.begin(ctx, textRenderer, UiScale.mouse(mouseX, ts), UiScale.mouse(mouseY, ts));
 		{
 			int ccx = tvw / 2;
@@ -169,41 +169,8 @@ public class HudEditorScreen extends Screen {
 			ui.spaced(lbl, ccx - ui.spacedWidth(lbl, 2) / 2, by2 + 9, 0xFFFFFFFF, 2);
 			ui.click("hudmain", bx2, by2, bw, bh2, () -> openMods("ALL", null));
 
-			// four small icon buttons
-			final int ib = 36, ig = 8;
-			int ix0 = ccx - (4 * ib + 3 * ig) / 2, iy = by2 + bh2 + 8;
-			String[] names = {"Visuals", "Profiles", "Auto arrange", "Reset HUD"};
-			ItemStack[] icons = {new ItemStack(Items.ENDER_EYE), new ItemStack(Items.CHEST), new ItemStack(Items.COMPARATOR), new ItemStack(Items.BARRIER)};
-			Runnable[] acts = {
-				() -> openMods("VISUAL", null),
-				() -> openMods("ALL", "PROFILES"),
-				() -> autoArrange(active),
-				() -> {
-					cfg.positions.clear();
-					RayConfig.save();
-					Toasts.push("HUD positions reset");
-				}
-			};
-			for (int i = 0; i < 4; i++) {
-				int ix = ix0 + i * (ib + ig);
-				boolean ih = ui.over(ix, iy, ib, ib);
-				float iv = ui.anim("hudic" + i, ih);
-				ui.rrect(ix, iy, ib, ib, 5, Theme.mix(0xF0101014, 0xF01C1C22, iv));
-				ui.ring(ix, iy, ib, ib, 5, Ui.white(0.10f + 0.10f * iv));
-				ctx.getMatrices().pushMatrix();
-				ctx.getMatrices().translate((float) (ix + 6), (float) (iy + 6 - Math.round(iv)));
-				ctx.getMatrices().scale(1.5f, 1.5f);
-				ctx.drawItem(icons[i], 0, 0);
-				ctx.getMatrices().popMatrix();
-				ui.click("hudicb" + i, ix, iy, ib, ib, acts[i]);
-				if (ih) {
-					int tw2 = ui.w(names[i]) + 14, tx2 = ix + ib / 2 - tw2 / 2, ty2 = iy + ib + 5;
-					ui.rrect(tx2, ty2, tw2, 15, 5, 0xF0101014);
-					ui.ring(tx2, ty2, tw2, 15, 5, Ui.white(0.14f));
-					ui.text(names[i], tx2 + 7, ty2 + 4, 0xFFFFFFFF);
-				}
-			}
 		}
+
 		ui.poll();
 		ctx.getMatrices().popMatrix();
 		boolean uiClicked = ui.leftPressed && overToolbar;

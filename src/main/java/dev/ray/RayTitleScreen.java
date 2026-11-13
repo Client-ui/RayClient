@@ -166,6 +166,7 @@ public class RayTitleScreen extends Screen {
 		Brand.backdrop(ctx, width, height, now, 1.0f, px, py);
 
 		float sc = UiScale.fit(width, height, 560, 315, cfg.menuScale);
+		ClientFont.scale = sc;
 		int vw = UiScale.view(width, sc), vh = UiScale.view(height, sc);
 		ctx.getMatrices().pushMatrix();
 		ctx.getMatrices().scale(sc, sc);

@@ -26,20 +26,34 @@ import java.util.Map;
 public final class ClientFont {
 	private static final int MAX_CACHE = 4096;
 
-	/** One cache of built texts and widths for one font. */
-	private static final class Face {
+	/** Built texts and measured widths for one font id. */
+	private static final class Sub {
 		final Map<String, Text> texts = new HashMap<>();
 		final Map<String, Integer> widths = new HashMap<>();
-		Identifier font = null;
+	}
 
-		void check(Identifier id) {
-			if (!java.util.Objects.equals(id, font) || texts.size() > MAX_CACHE || widths.size() > MAX_CACHE) {
-				texts.clear();
-				widths.clear();
-				font = id;
+	/** The caches of one kind of text: one {@link Sub} per font id, because the id changes with the on-screen size. */
+	private static final class Face {
+		final Map<Identifier, Sub> subs = new HashMap<>();
+
+		Sub sub(Identifier id) {
+			Sub s = subs.get(id);
+			if (s == null) {
+				s = new Sub();
+				subs.put(id, s);
+			} else if (s.texts.size() > MAX_CACHE || s.widths.size() > MAX_CACHE) {
+				s.texts.clear();
+				s.widths.clear();
 			}
+			return s;
 		}
 	}
+
+	/**
+	 * How many GUI units one unit of the current drawing area is. Menus that scale themselves to fit the window set this to
+	 * their scale while they draw (and Ui resets it to 1 afterwards), so the font can be picked to match the real size.
+	 */
+	public static float scale = 1f;
 
 	private static final Face CLIENT = new Face(), SMOOTH = new Face(), HEAD = new Face();
 	private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger("ray");
@@ -51,7 +65,7 @@ public final class ClientFont {
 
 	private ClientFont() {}
 
-	private static Text parse(String s, Identifier id, int shape) {
+	static Text parse(String s, Identifier id, int shape) {
 		try {
 			JsonObject json = new JsonObject();
 			json.addProperty("text", s);
@@ -70,7 +84,7 @@ public final class ClientFont {
 		}
 	}
 
-	private static Text styled(Face face, Identifier id, String s) {
+	private static Text styled(Sub face, Identifier id, String s) {
 		if (s == null || s.isEmpty() || id == null) return null;
 		Text t = face.texts.get(s);
 		if (t != null) return t;
@@ -96,20 +110,19 @@ public final class ClientFont {
 		return t;
 	}
 
-	private static void drawOn(Face face, Identifier id, DrawContext ctx, TextRenderer tr, String s, int x, int y, int color, boolean shadow) {
-		face.check(id);
-		Text t = styled(face, id, s);
+	private static void drawOn(Face faces, Identifier id, DrawContext ctx, TextRenderer tr, String s, int x, int y, int color, boolean shadow) {
+		Text t = styled(faces.sub(id), id, s);
 		if (t != null) ctx.drawText(tr, t, x, y, color, shadow);
 		else ctx.drawText(tr, s, x, y, color, shadow);
 	}
 
-	private static int widthOn(Face face, Identifier id, TextRenderer tr, String s) {
-		face.check(id);
-		Integer cached = face.widths.get(s);
+	private static int widthOn(Face faces, Identifier id, TextRenderer tr, String s) {
+		Sub sub = faces.sub(id);
+		Integer cached = sub.widths.get(s);
 		if (cached != null) return cached;
-		Text t = styled(face, id, s);
+		Text t = styled(sub, id, s);
 		int w = t != null ? tr.getWidth(t) : tr.getWidth(s);
-		face.widths.put(s, w);
+		sub.widths.put(s, w);
 		return w;
 	}
 

@@ -13,8 +13,10 @@ public final class Hud {
 	private Hud() {}
 
 	public static void render(DrawContext ctx, RenderTickCounter tickCounter) {
+		ClientFont.scale = 1f; // the HUD is drawn in plain GUI units
 		MinecraftClient mc = MinecraftClient.getInstance();
 		RayConfig cfg = RayConfig.get();
+		if (mc.player != null) Nametags.frame(mc.player.getUuid());
 		if (mc.player == null || mc.world == null || mc.options.hudHidden) return;
 		// the HUD editor draws the modules itself
 		if (mc.currentScreen instanceof HudEditorScreen) return;

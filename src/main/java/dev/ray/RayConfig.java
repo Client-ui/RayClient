@@ -274,6 +274,11 @@ public class RayConfig {
 	public int hudOpacity = 40;
 	public boolean textShadow = true;
 	/** Draws every HUD text with a dark outline (reads on any background). */
+	/** Nametag: show the Ray logo on the nametags of people who use the client (on by default). */
+	public boolean nametagOn = true;
+	public boolean nametagSelf = true;
+	/** Address of a presence server (see the server folder). Empty = nothing is ever sent anywhere. */
+	public String nametagServer = "";
 	public boolean hudOutline = true;
 	/** Look version: older configs are moved to the new look (Ember accent, Inter font everywhere) once. */
 	public int uiSchema = 0;
@@ -368,6 +373,13 @@ public class RayConfig {
 				skyCustomCloud = 0xFFE6CC;
 			}
 			uiSchema = 3;
+		}
+		if (uiSchema < 4) { // Better Font: both uses on by default, one shared face
+			minecraftFontOn = true;
+			clientFontOn = true;
+			minecraftFont = 1;
+			clientFont = 1;
+			uiSchema = 4;
 		}
 		accent = clamp(accent, 0, Theme.COLORS.length - 1);
 		hudOpacity = clamp(hudOpacity, 0, 100);
@@ -473,7 +485,7 @@ public class RayConfig {
 			loaded.totalSeconds = old.totalSeconds;
 			loaded.favorites = old.favorites;
 			loaded.lastDeath = old.lastDeath;
-			loaded.uiSchema = 3;
+			loaded.uiSchema = 4;
 			if (loaded.modules == null) loaded.modules = new HashMap<>();
 			if (loaded.positions == null) loaded.positions = new HashMap<>();
 			if (loaded.styles == null) loaded.styles = new HashMap<>();

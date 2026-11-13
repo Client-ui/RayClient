@@ -14,19 +14,21 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Minecraft Font and Client Font: two independent settings.
+ * Better Font: the fonts of the client, with two independent switches.
  *
- *  - Minecraft Font replaces Minecraft's "default" font id (the same id override Minecraft uses for its "Force Unicode
- *    Font" option), so chat, vanilla menus, tooltips, signs... all change at once.
- *  - Client Font is applied to the client's own text only (Ray menus and HUD modules) by {@link ClientFont}, which gives
- *    that text an explicit font. Explicit fonts are not touched by the Minecraft Font swap, so the two never interfere.
+ *  - "For Minecraft" replaces Minecraft's "default" font (chat, vanilla menus, tooltips, signs...). The mod also ships a
+ *    resource file that puts Inter in front of the default font, so this works even where the font hook cannot attach;
+ *    the hook only adds switching it off and choosing another face.
+ *  - "For Ray Client" is applied to the client's own text (Ray menus and HUD modules) by {@link ClientFont}, which gives
+ *    that text an explicit font, so the two switches never interfere.
  *
- * Six fonts ship with the mod: a copy of Minecraft's normal font ("Minecraft default") and five others (Inter is the default). A seventh slot, "My own font", comes from a .ttf/.otf
- * you drop into the ray-fonts config folder; Minecraft only loads fonts from resource packs, so {@link #preparePack}
- * turns that file into a small pack ("Ray Fonts") that you enable once in Options > Resource Packs.
+ * Minecraft draws text from a texture with nearest-pixel sampling, so a font only looks sharp when its texture detail
+ * matches the real on-screen size. Every bundled font therefore ships at several detail levels (oversample 1 to 8) and the
+ * one closest to the real size (GUI scale times the menu scale) is chosen for each piece of text. That is what keeps
+ * small menu text from breaking up.
  *
- * A font that is not loaded (hook missing, custom pack not enabled) is simply not applied, so text can never turn into
- * empty boxes.
+ * A seventh slot, "My own font", comes from a .ttf/.otf you drop into the ray-fonts config folder; Minecraft only loads
+ * fonts from resource packs, so {@link #preparePack} turns that file into a small pack ("Ray Fonts").
  */
 public final class FontOverride {
 	/** Index 0 is a copy of Minecraft's own font; 6 is the one you add yourself. */
@@ -34,9 +36,6 @@ public final class FontOverride {
 	private static final String[] IDS = {"vanilla", "inter", "outfit", "jetbrains", "tektur", "worksans", "custom"};
 
 	private static final Identifier DEFAULT = Identifier.of("minecraft", "default");
-
-	/** The one font every Ray menu and HUD module is drawn in: Inter (index 1 of {@link #NAMES}). */
-	private static final int CLIENT_FONT = 1;
 
 	/** Set by the FontManager mixin when Minecraft creates its font manager. */
 	public static Object manager;
@@ -65,77 +64,72 @@ public final class FontOverride {
 		return manager instanceof RayFontAccess a && a.ray$has(Identifier.of("ray", IDS[index]));
 	}
 
-	private static final Identifier[] FONT_IDS = new Identifier[IDS.length];
+	/** Detail levels (oversample times ten) in which every bundled font ships. */
+	private static final int[] TAGS = {10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 80};
+	private static final String[] BUNDLED = {"inter", "interbold", "outfit", "jetbrains", "tektur", "worksans"};
+	private static final Map<String, Identifier[]> VARIANTS = new java.util.HashMap<>();
+	private static final Identifier VANILLA_ID = Identifier.of("ray", "vanilla");
+	private static final Identifier CUSTOM_ID = Identifier.of("ray", "custom");
 
 	static {
-		for (int i = 0; i < IDS.length; i++) FONT_IDS[i] = Identifier.of("ray", IDS[i]);
+		for (String n : BUNDLED) {
+			Identifier[] a = new Identifier[TAGS.length];
+			for (int i = 0; i < TAGS.length; i++) a[i] = Identifier.of("ray", n + "_o" + TAGS[i]);
+			VARIANTS.put(n, a);
+		}
 	}
 
-	// "is this font loaded" almost never changes, so it is looked up twice a second instead of on every drawn string
-	private static int clientKey = -2;
-	private static Identifier clientCached = null;
-	private static long clientAt = 0L;
+	/** Real screen pixels per unit of whatever is being drawn right now (GUI scale times the menu scale). */
+	public static float real() {
+		return (float) (UiScale.guiScale() * ClientFont.scale);
+	}
 
-	/** The font the client's own text should use, or null to draw it normally. */
+	/** The detail level of a bundled font that is closest to the given real size. */
+	private static Identifier variant(String name, float real) {
+		Identifier[] a = VARIANTS.get(name);
+		if (a == null) return null;
+		int best = 0;
+		float bd = Float.MAX_VALUE;
+		for (int i = 0; i < TAGS.length; i++) {
+			float d = Math.abs(TAGS[i] / 10f - real);
+			if (d < bd) {
+				bd = d;
+				best = i;
+			}
+		}
+		return a[best];
+	}
+
+	/** The font id for a slot of {@link #NAMES} at a real size. Never null. */
+	private static Identifier faceId(int face, boolean head, float real) {
+		if (face <= 0) return VANILLA_ID;
+		if (face >= IDS.length - 1) return loaded(face) ? CUSTOM_ID : variant("inter", real);
+		return variant(head && face == 1 ? "interbold" : IDS[face], real);
+	}
+
+	/** The font the client's own text should use, or null to draw it the normal way (Better Font off for the client). */
 	public static Identifier clientFontId() {
 		RayConfig c = RayConfig.get();
-		int key = CLIENT_FONT; // the whole client uses one font; it is not a setting any more
-		long now = System.currentTimeMillis();
-		if (key == clientKey && now - clientAt < 500L) return clientCached;
-		clientKey = key;
-		clientAt = now;
-		clientCached = key >= 0 && loaded(key) ? FONT_IDS[key] : null;
-		return clientCached;
+		return c.clientFontOn ? faceId(c.minecraftFont, false, real()) : null;
 	}
 
-	private static Identifier smoothCached = null;
-	private static long smoothAt = -1L;
-
-	/** The smooth font (Inter) used where text must never look pixelated, or null if it is not loaded. */
-	public static Identifier smoothId() {
-		long now = System.currentTimeMillis();
-		if (smoothAt < 0L || now - smoothAt > 500L) {
-			smoothAt = now;
-			smoothCached = loaded(CLIENT_FONT) ? FONT_IDS[CLIENT_FONT] : null;
-		}
-		return smoothCached;
-	}
-
-	private static final Identifier HEAD_ID = Identifier.of("ray", "interbold");
-	private static Identifier headCached = null;
-	private static long headAt = -1L;
-
-	/** The bold face used for headings (Inter SemiBold), or null if it is not loaded. */
+	/** The bold face used for headings (Inter SemiBold when Inter is chosen), or null like {@link #clientFontId}. */
 	public static Identifier headId() {
-		long now = System.currentTimeMillis();
-		if (headAt < 0L || now - headAt > 500L) {
-			headAt = now;
-			headCached = HEAD_ID; // ships inside the mod
-		}
-		return headCached;
+		RayConfig c = RayConfig.get();
+		return c.clientFontOn ? faceId(c.minecraftFont, true, real()) : null;
 	}
 
-	/** Applies the Minecraft Font setting. Cheap; safe to call every tick. */
+	/** Inter at the right detail for the current size, whatever the settings (Lyric Sync wants smooth text always). */
+	public static Identifier smoothId() {
+		return variant("inter", real());
+	}
+
+	/** Applies the "for Minecraft" switch and face. Cheap; safe to call every tick. */
 	public static void update() {
 		if (!(manager instanceof RayFontOverrides access)) return;
 		RayConfig c = RayConfig.get();
-		Identifier want = null;
-		// index 0 is Minecraft's own font: choosing it means "no change"
-		if (c.minecraftFontOn && c.minecraftFont > 0 && c.minecraftFont < IDS.length) {
-			Identifier id = Identifier.of("ray", IDS[c.minecraftFont]);
-			// bundled fonts are always present; the custom font (a separate resource pack) must really be loaded, because
-			// mapping the default font to a font that does not exist would turn all text into boxes
-			if (c.minecraftFont < IDS.length - 1 || (manager instanceof RayFontAccess a && a.ray$has(id))) want = id;
-		}
-
-		if (want == null) {
-			if (applied != null) {
-				access.ray$setOverrides(Map.of());
-				applied = null;
-				appliedMap = null;
-			}
-			return;
-		}
+		// off = Minecraft's real default font; on = the chosen face at the detail that matches the GUI scale
+		Identifier want = c.minecraftFontOn ? faceId(c.minecraftFont, false, (float) UiScale.guiScale()) : VANILLA_ID;
 		if (!want.equals(applied)) {
 			applied = want;
 			appliedMap = Map.of(DEFAULT, want);
