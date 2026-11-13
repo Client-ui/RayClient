@@ -39,8 +39,8 @@ public class RayScreen extends Screen {
 	/** Modules that get a red NEW tag on their tile and the NEW filter. */
 	private static final Set<String> NEW_IDS = Set.of("f_crosshair", "f_sky", "f_lyrics", "f_hitbox", "f_sideshield", "minimap");
 
-	private static final int DESIGN_W = 760, DESIGN_H = 450;
-	private static final int HEADER_H = 44, SIDE_W = 160, TILE_H = 94, GAP = 10;
+	private static final int DESIGN_W = 680, DESIGN_H = 410;
+	private static final int HEADER_H = 44, SIDE_W = 150, TILE_H = 104, GAP = 10;
 
 	private static int page = 0;
 	private static String filter = "ALL";
@@ -303,7 +303,7 @@ public class RayScreen extends Screen {
 
 	private int filterChip(int x, int y, String label) {
 		boolean active = filter.equals(label);
-		int w = ui.w(nice(label)) + 14, h = 20, cr = 5;
+		int w = ui.w(nice(label)) + 12, h = 20, cr = 5;
 		float hv = ui.anim("fc" + label, ui.over(x, y, w, h));
 		float on = ui.anim("fcon" + label, active);
 		if (on > 0.05f) ui.glow(x, y, w, h, cr, Theme.accent(), on * 0.5f);
@@ -314,7 +314,7 @@ public class RayScreen extends Screen {
 		if (on > 0.02f) {
 			ui.rrect(x, y, w, h, cr, Theme.fade(Theme.accent(), on));
 		}
-		ui.text(nice(label), x + 7, y + 6, Theme.mix(Theme.mix(Theme.DIM, 0xFFFFFFFF, hv), Ui.onAccent(), on));
+		ui.text(nice(label), x + 6, y + 6, Theme.mix(Theme.mix(Theme.DIM, 0xFFFFFFFF, hv), Ui.onAccent(), on));
 		ui.click("fchip" + label, x, y, w, h, () -> setFilter(label));
 		return w;
 	}
@@ -329,7 +329,7 @@ public class RayScreen extends Screen {
 		int bodyY = top + 14, innerH = bodyH - 28;
 
 		// search pill (right), view switch, then the chips (wrapping)
-		sw = Math.min(116, innerW / 5);
+		sw = Math.min(100, innerW / 5);
 		sh = 22;
 		sx = left + innerW - sw;
 		sy = bodyY;
@@ -359,13 +359,13 @@ public class RayScreen extends Screen {
 		int chipAreaW = vx - 10 - left;
 		int cx = left, cy = bodyY + 1, rows = 1;
 		for (String chip : CHIPS) {
-			int cw = ui.w(nice(chip)) + 14;
+			int cw = ui.w(nice(chip)) + 12;
 			if (cx + cw > left + chipAreaW && cx > left) {
 				cx = left;
 				cy += 24;
 				rows++;
 			}
-			cx += filterChip(cx, cy, chip) + 4;
+			cx += filterChip(cx, cy, chip) + 3;
 		}
 
 		// filter, then sort (cached: rebuilt only when something changed, not every frame)
@@ -402,7 +402,7 @@ public class RayScreen extends Screen {
 		int footH = 28;
 		int gh = bodyY + innerH - footH - gy;
 		int gw = innerW - 8;
-		int cols = list ? 1 : cfg.menuCols > 0 ? cfg.menuCols : Math.max(2, Math.min(5, (gw + GAP) / (172 + GAP)));
+		int cols = list ? 1 : cfg.menuCols > 0 ? cfg.menuCols : Math.max(2, Math.min(5, (gw + GAP) / (200 + GAP)));
 		int itemH = list ? 34 : TILE_H;
 		int gap = list ? 6 : GAP;
 		int cardWd = (gw - (cols - 1) * gap) / cols;
@@ -658,7 +658,7 @@ public class RayScreen extends Screen {
 		for (int i = 0; i < Math.min(2, lines.size()); i++) {
 			String ln = lines.get(i);
 			if (i == 1 && lines.size() > 2) ln = ui.fit(ln + "...", w - pad * 2);
-			ui.text(ln, x + pad, y + pad + 42 + i * 10, Theme.fade(Theme.DIM, 0.85f * ap));
+			ui.text(ln, x + pad, y + pad + 41 + i * 12, Theme.fade(Theme.DIM, 0.9f * ap));
 		}
 
 		// footer: the switch, and a link to the settings
