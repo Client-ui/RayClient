@@ -233,6 +233,9 @@ public class RayConfig {
 	public boolean crosshairOutline = false;
 	public int crosshairColor = 0;
 	public int enemyColor = 2;
+	/** The "Custom" crosshair colours (0xRRGGBB), picked with the colour wheel. */
+	public int crosshairCustom = 0xFF8A3D;
+	public int enemyCustom = 0xFF4040;
 	public int crosshairScale = 2;
 	public int enemyTarget = 0;
 	public String crosshairPixels = CrosshairArt.cross();
@@ -257,6 +260,8 @@ public class RayConfig {
 	public int minecraftFont = 1;
 	/** Font for all of the client's own text (Ray menus and HUD modules). */
 	public boolean clientFontOn = true;
+	/** Use the pixel-exact Inter bitmaps for the client's own text (sharp at every size). Off = the smooth TrueType font. */
+	public boolean pixelFont = true;
 	public int clientFont = 1;
 	public String customFontFile = "";
 	/** Ray background on the singleplayer / multiplayer / options screens (when not in a world). */

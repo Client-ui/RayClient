@@ -79,6 +79,39 @@ public final class FontOverride {
 		}
 	}
 
+	/** The pixel-exact Inter bitmaps (assets/ray/font/ip_N.json and ipb_N.json for headings), by text height in screen pixels. */
+	private static final int[] PIX_REG = {9, 10, 11, 12, 13, 14, 16, 18, 20, 22, 24, 27, 30, 34, 40, 45, 50, 60};
+	private static final int[] PIX_BOLD = {10, 12, 14, 16, 20, 24, 30, 40, 50, 60};
+	private static final Identifier[] PIX_REG_IDS = new Identifier[PIX_REG.length];
+	private static final Identifier[] PIX_BOLD_IDS = new Identifier[PIX_BOLD.length];
+
+	static {
+		for (int i = 0; i < PIX_REG.length; i++) PIX_REG_IDS[i] = Identifier.of("ray", "ip_" + PIX_REG[i]);
+		for (int i = 0; i < PIX_BOLD.length; i++) PIX_BOLD_IDS[i] = Identifier.of("ray", "ipb_" + PIX_BOLD[i]);
+	}
+
+	/** True for the pixel-exact bitmap fonts: text in them must be drawn in screen-pixel units (see ClientFont). */
+	public static boolean isPixel(Identifier id) {
+		return id != null && id.getPath().startsWith("ip");
+	}
+
+	/** The baked size closest to a layout em of 10 units at this real scale. */
+	private static Identifier pixel(boolean head, float real) {
+		int[] sizes = head ? PIX_BOLD : PIX_REG;
+		Identifier[] ids = head ? PIX_BOLD_IDS : PIX_REG_IDS;
+		float target = 10f * real;
+		int best = 0;
+		float bd = Float.MAX_VALUE;
+		for (int i = 0; i < sizes.length; i++) {
+			float d = Math.abs(sizes[i] - target);
+			if (d < bd) {
+				bd = d;
+				best = i;
+			}
+		}
+		return ids[best];
+	}
+
 	/** Real screen pixels per unit of whatever is being drawn right now (GUI scale times the menu scale). */
 	public static float real() {
 		return (float) (UiScale.guiScale() * ClientFont.scale);
@@ -101,22 +134,24 @@ public final class FontOverride {
 	}
 
 	/** The font id for a slot of {@link #NAMES} at a real size. Never null. */
-	private static Identifier faceId(int face, boolean head, float real) {
+	private static Identifier faceId(int face, boolean head, float real, boolean pixelOk) {
 		if (face <= 0) return VANILLA_ID;
+		if (face == 1 && pixelOk) return pixel(head, real);
 		if (face >= IDS.length - 1) return loaded(face) ? CUSTOM_ID : variant("inter", real);
 		return variant(head && face == 1 ? "interbold" : IDS[face], real);
 	}
 
-	/** The font the client's own text should use, or null to draw it the normal way (Better Font off for the client). */
+	/** The font the client's own text should use (Minecraft's own font when Better Font is off for the client). */
 	public static Identifier clientFontId() {
 		RayConfig c = RayConfig.get();
-		return c.clientFontOn ? faceId(c.minecraftFont, false, real()) : null;
+		// off = Minecraft's real font, asked for by name (not "no font", which would follow the default font)
+		return c.clientFontOn ? faceId(c.minecraftFont, false, real(), c.pixelFont) : VANILLA_ID;
 	}
 
 	/** The bold face used for headings (Inter SemiBold when Inter is chosen), or null like {@link #clientFontId}. */
 	public static Identifier headId() {
 		RayConfig c = RayConfig.get();
-		return c.clientFontOn ? faceId(c.minecraftFont, true, real()) : null;
+		return c.clientFontOn ? faceId(c.minecraftFont, true, real(), c.pixelFont) : VANILLA_ID;
 	}
 
 	/** Inter at the right detail for the current size, whatever the settings (Lyric Sync wants smooth text always). */
@@ -129,7 +164,7 @@ public final class FontOverride {
 		if (!(manager instanceof RayFontOverrides access)) return;
 		RayConfig c = RayConfig.get();
 		// off = Minecraft's real default font; on = the chosen face at the detail that matches the GUI scale
-		Identifier want = c.minecraftFontOn ? faceId(c.minecraftFont, false, (float) UiScale.guiScale()) : VANILLA_ID;
+		Identifier want = c.minecraftFontOn ? faceId(c.minecraftFont, false, (float) UiScale.guiScale(), false) : VANILLA_ID;
 		if (!want.equals(applied)) {
 			applied = want;
 			appliedMap = Map.of(DEFAULT, want);

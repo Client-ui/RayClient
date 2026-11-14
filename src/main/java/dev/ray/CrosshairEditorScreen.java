@@ -90,7 +90,7 @@ public class CrosshairEditorScreen extends Screen {
 		if (client.world == null) Brand.backdrop(ctx, width, height, System.currentTimeMillis(), 1.0f);
 		RayConfig cfg = RayConfig.get();
 		int accent = Theme.accent();
-		float sc = UiScale.fit(width, height, 420, 270, cfg.menuScale);
+		float sc = UiScale.fit(width, height, 420, 300, cfg.menuScale);
 		ClientFont.scale = sc;
 		int viewW = UiScale.view(width, sc), viewH = UiScale.view(height, sc);
 		int mx = UiScale.mouse(mouseX, sc), my = UiScale.mouse(mouseY, sc);
@@ -99,7 +99,7 @@ public class CrosshairEditorScreen extends Screen {
 		ctx.getMatrices().scale(sc, sc);
 		ui.begin(ctx, textRenderer, mx, my);
 
-		int pw = Math.min(420, viewW - 8), ph = 270;
+		int pw = Math.min(420, viewW - 8), ph = 300;
 		cell = 15;
 		int px = (viewW - pw) / 2, py = Math.max(0, (viewH - ph) / 2);
 		ui.surface(px, py, pw, ph, 12);
@@ -124,7 +124,8 @@ public class CrosshairEditorScreen extends Screen {
 		gx = px + 18;
 		gy = py + 72;
 		String art = art();
-		int col = CrosshairArt.color(colorIdx());
+		int customRgb = editTab == 0 ? cfg.crosshairCustom : cfg.enemyCustom;
+		int col = CrosshairArt.color(colorIdx(), customRgb);
 		int gridPx = CrosshairArt.N * cell;
 		ui.rrect(gx - 4, gy - 4, gridPx + 8, gridPx + 8, 9, 0xCC050507);
 		ui.rimGlass(gx - 4, gy - 4, gridPx + 8, gridPx + 8, 9, 0.20f, 0.06f);
@@ -151,7 +152,8 @@ public class CrosshairEditorScreen extends Screen {
 			int sx = rx + i * step, sy = py + 64;
 			boolean selc = colorIdx() == i;
 			float sv = ui.anim("cbsw" + i, selc);
-			ui.rrect(sx, sy, swSize, 16, 5, CrosshairArt.color(i));
+			ui.rrect(sx, sy, swSize, 16, 5, CrosshairArt.color(i, customRgb));
+			if (i == CrosshairArt.CUSTOM) ui.text("+", sx + swSize / 2 - 2, sy + 4, 0xFF101014);
 			if (sv > 0.02f) ui.ring(sx - 2, sy - 2, swSize + 4, 20, 7, Theme.fade(0xFFFFFFFF, sv));
 			ui.click("col" + i, sx, sy, swSize, 16, () -> setColor(idx));
 		}
@@ -178,8 +180,16 @@ public class CrosshairEditorScreen extends Screen {
 			}));
 		}
 
-		// toggles
+		// toggles (or, while the Custom colour is selected, the colour wheel in their place)
 		int ty = by + 28;
+		if (colorIdx() == CrosshairArt.CUSTOM) {
+			final int tab = editTab;
+			ui.colorPicker(new Ui.Form(ui, rx, ty, rw), "xhcustom" + tab, customRgb, v -> {
+				if (tab == 0) cfg.crosshairCustom = v & 0xFFFFFF;
+				else cfg.enemyCustom = v & 0xFFFFFF;
+			});
+			ui.text(ui.fit("Pick a preset to show the options again.", rw), rx, ty + 104, Theme.MUTE);
+		} else {
 		smallToggle(rx, ty, rw, "Vanilla Blending", cfg.crosshairVanillaBlend, () -> cfg.crosshairVanillaBlend = !cfg.crosshairVanillaBlend);
 		smallToggle(rx, ty + 24, rw, "Outline", cfg.crosshairOutline, () -> cfg.crosshairOutline = !cfg.crosshairOutline);
 		if (editTab == 0) {
@@ -187,6 +197,7 @@ public class CrosshairEditorScreen extends Screen {
 		} else {
 			smallToggle(rx, ty + 48, rw, "Enemy Crosshair", cfg.enemyCrosshair, () -> cfg.enemyCrosshair = !cfg.enemyCrosshair);
 			smallButton(rx, ty + 72, rw, "Target: " + TARGETS[cfg.enemyTarget], () -> cfg.enemyTarget = (cfg.enemyTarget + 1) % TARGETS.length);
+		}
 		}
 
 		ui.poll();

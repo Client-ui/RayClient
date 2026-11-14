@@ -112,8 +112,24 @@ public final class ClientFont {
 
 	private static void drawOn(Face faces, Identifier id, DrawContext ctx, TextRenderer tr, String s, int x, int y, int color, boolean shadow) {
 		Text t = styled(faces.sub(id), id, s);
-		if (t != null) ctx.drawText(tr, t, x, y, color, shadow);
-		else ctx.drawText(tr, s, x, y, color, shadow);
+		if (t == null) {
+			ctx.drawText(tr, s, x, y, color, shadow);
+			return;
+		}
+		if (FontOverride.isPixel(id)) {
+			// Pixel-exact text: the font is a bitmap drawn so that one texture pixel is exactly one screen pixel. For that
+			// the text is drawn in screen-pixel units (the scale is divided out) from an origin on the pixel grid, which
+			// is what makes every stem the same width and every letter evenly spaced.
+			float real = Math.max(0.5f, FontOverride.real());
+			int dy = Math.round(7.6f * real) - 7; // Minecraft puts the baseline 7 units down; we want it 7.6 units down
+			ctx.getMatrices().pushMatrix();
+			ctx.getMatrices().translate((float) x, (float) y);
+			ctx.getMatrices().scale(1f / real, 1f / real);
+			ctx.drawText(tr, t, 0, dy, color, shadow);
+			ctx.getMatrices().popMatrix();
+			return;
+		}
+		ctx.drawText(tr, t, x, y, color, shadow);
 	}
 
 	private static int widthOn(Face faces, Identifier id, TextRenderer tr, String s) {
@@ -121,7 +137,12 @@ public final class ClientFont {
 		Integer cached = sub.widths.get(s);
 		if (cached != null) return cached;
 		Text t = styled(sub, id, s);
-		int w = t != null ? tr.getWidth(t) : tr.getWidth(s);
+		int w;
+		if (t != null && FontOverride.isPixel(id)) {
+			w = (int) Math.ceil(tr.getWidth(t) / Math.max(0.5f, FontOverride.real())); // screen pixels back to layout units
+		} else {
+			w = t != null ? tr.getWidth(t) : tr.getWidth(s);
+		}
 		sub.widths.put(s, w);
 		return w;
 	}

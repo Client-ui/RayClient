@@ -751,7 +751,9 @@ public final class Features {
 		f.section("Better Font");
 		ui.toggle(f.full(), "Use it in Minecraft (chat, menus, signs, tooltips)", c.minecraftFontOn, () -> c.minecraftFontOn = !c.minecraftFontOn);
 		ui.toggle(f.full(), "Use it in Ray Client (menus and HUD)", c.clientFontOn, () -> c.clientFontOn = !c.clientFontOn);
-		f.note("Both are on by default. The font is drawn at the detail that matches your screen size, so small text stays sharp at any GUI scale or Menu Size. Turning Minecraft off brings back the original pixel font (needs the font hook, see below).");
+		ui.toggle(f.full(), "Pixel-sharp text in Ray Client (Inter)", c.pixelFont, () -> c.pixelFont = !c.pixelFont);
+		f.note("Both uses are on by default. Pixel-sharp text draws Inter as pre-hinted bitmaps, one texture pixel per screen pixel, so every letter is crisp and evenly spaced at any size; turn it off to use the smooth TrueType font instead. Turning a use off brings back Minecraft's own font for it.");
+		f.note(FontOverride.supported() ? "Minecraft text switching: active." : "Minecraft text switching: NOT available on this Minecraft version (the client's own text still switches).");
 		if (!FontOverride.supported()) {
 			f.note("The font hook could not attach on this Minecraft version. The font still applies (it ships as a resource), but switching it off for Minecraft and choosing other faces for Minecraft will not work.");
 		}
@@ -786,8 +788,9 @@ public final class Features {
 		ui.toggle(f.half(), "Use Drawn Crosshair", c.crosshairDrawn, () -> c.crosshairDrawn = !c.crosshairDrawn);
 		ui.toggle(f.half(), "Vanilla Blending", c.crosshairVanillaBlend, () -> c.crosshairVanillaBlend = !c.crosshairVanillaBlend);
 		ui.toggle(f.half(), "Outline", c.crosshairOutline, () -> c.crosshairOutline = !c.crosshairOutline);
-		ui.colorChoice(f.half(), "Color", CrosshairArt.COLOR_NAMES[c.crosshairColor], CrosshairArt.color(c.crosshairColor),
+		ui.colorChoice(f.half(), "Color", CrosshairArt.COLOR_NAMES[c.crosshairColor], CrosshairArt.color(c.crosshairColor, c.crosshairCustom),
 			() -> c.crosshairColor = (c.crosshairColor + 1) % CrosshairArt.colorCount());
+		if (c.crosshairColor == CrosshairArt.CUSTOM) ui.colorPicker(f, "ch_custom", c.crosshairCustom, v -> c.crosshairCustom = v & 0xFFFFFF);
 		ui.slider(f.half(), "Pixel Scale", 1, 4, c.crosshairScale, "x", v -> c.crosshairScale = v);
 		s.numberRow(f.half(), "Overall Size (type)", "ch_size", c.crosshairZoom, 0.25f, 8.0f, v -> c.crosshairZoom = v);
 		f.note("Overall Size multiplies the whole crosshair: 1.0 is normal, 1.33 is a third bigger, 0.5 is half. Click the box and type any number from 0.25 to 8.");

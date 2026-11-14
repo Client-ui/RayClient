@@ -100,10 +100,10 @@ public final class Hud {
 		boolean blend = cfg.crosshairVanillaBlend;
 
 		if (cfg.enemyCrosshair && targetsEnemy(mc, cfg)) {
-			CrosshairArt.draw(ctx, cfg.enemyPixels, cx, cy, cfg.crosshairScale, CrosshairArt.color(cfg.enemyColor), cfg.crosshairOutline, blend);
+			CrosshairArt.draw(ctx, cfg.enemyPixels, cx, cy, cfg.crosshairScale, CrosshairArt.color(cfg.enemyColor, cfg.enemyCustom), cfg.crosshairOutline, blend);
 			return;
 		}
-		int c = CrosshairArt.color(cfg.crosshairColor);
+		int c = CrosshairArt.color(cfg.crosshairColor, cfg.crosshairCustom);
 		if (cfg.crosshairDrawn) {
 			CrosshairArt.draw(ctx, cfg.crosshairPixels, cx, cy, cfg.crosshairScale, c, cfg.crosshairOutline, blend);
 			return;

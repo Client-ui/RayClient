@@ -635,6 +635,7 @@ public class RayScreen extends Screen {
 
 		ui.rrect(x, y, w, h, r, Theme.fade(Ui.white(0.055f + 0.035f * hv), ap));
 		if (hv > 0.04f) ui.ring(x, y, w, h, r, Theme.fade(Ui.white(0.16f * hv), ap));
+		if (ov > 0.02f) ui.rect(x, y + 10, 2, h - 20, Theme.fade(accent, ov * ap)); // an enabled module wears a thin accent stripe
 		Long fl = flashAt.get(c.id);
 		if (fl != null) {
 			float ft = (now - fl) / 420f;

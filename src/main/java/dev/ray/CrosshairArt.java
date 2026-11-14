@@ -7,8 +7,10 @@ import java.util.function.BiPredicate;
 /** 11x11 pixel crosshair stored as a string of '0' / '1'. */
 public final class CrosshairArt {
 	public static final int N = 11;
-	public static final String[] COLOR_NAMES = {"Accent", "White", "Red", "Green", "Blue", "Yellow", "Cyan", "Pink"};
-	private static final int[] COLORS = {0, 0xFFFFFFFF, 0xFFEF4444, 0xFF22C55E, 0xFF3B82F6, 0xFFFACC15, 0xFF22D3EE, 0xFFF472B6};
+	public static final String[] COLOR_NAMES = {"Accent", "White", "Red", "Green", "Blue", "Yellow", "Cyan", "Pink", "Custom"};
+	private static final int[] COLORS = {0, 0xFFFFFFFF, 0xFFEF4444, 0xFF22C55E, 0xFF3B82F6, 0xFFFACC15, 0xFF22D3EE, 0xFFF472B6, 0};
+	/** The index of the "Custom" colour: its value is chosen with the colour wheel. */
+	public static final int CUSTOM = 8;
 
 	private CrosshairArt() {}
 
@@ -16,7 +18,13 @@ public final class CrosshairArt {
 		return COLORS.length;
 	}
 
+	/** The colour for an index; customRgb (0xRRGGBB) is used when the index is Custom. */
+	public static int color(int idx, int customRgb) {
+		return idx == CUSTOM ? 0xFF000000 | (customRgb & 0xFFFFFF) : color(idx);
+	}
+
 	public static int color(int idx) {
+		if (idx == CUSTOM) return 0xFFFF8A3D;
 		if (idx <= 0 || idx >= COLORS.length) return Theme.accent();
 		return COLORS[idx];
 	}
