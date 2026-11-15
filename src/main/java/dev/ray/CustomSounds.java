@@ -104,14 +104,7 @@ public final class CustomSounds {
 
 	/** Opens the sounds folder in the system file browser (best effort). */
 	public static void openFolder() {
-		Path p = folder();
-		AUDIO.execute(() -> {
-			try {
-				if (java.awt.Desktop.isDesktopSupported()) java.awt.Desktop.getDesktop().open(p.toFile());
-			} catch (Throwable ignored) {
-				// the path is shown on the settings page as a fallback
-			}
-		});
+		Sys.openFolder(folder());
 	}
 
 	/**

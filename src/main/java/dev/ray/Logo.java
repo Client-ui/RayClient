@@ -138,13 +138,14 @@ public final class Logo {
 	/**
 	 * Draws the logo h units tall with its top-left corner at (x, y). alpha is 0..1.
 	 *
-	 * One layout unit is several real screen pixels (GUI scale times the menu scale), so rasterising at one run per unit
-	 * makes every soft edge pixel a visible block and the logo looks blurry. It is rasterised at 3 to 4 times that
-	 * resolution instead and drawn scaled back down, so its edges are anti-aliased at about real-pixel size.
+	 * One layout unit is several real screen pixels (GUI scale times the menu scale). The logo is rasterised at exactly
+	 * one step per real pixel (see FontOverride.real) and drawn scaled back down, so its anti-aliased edges are sharp.
 	 */
 	public static void draw(DrawContext ctx, int x, int y, int h, float alpha) {
 		if (h < 6 || alpha <= 0.01f) return;
-		int f = h <= 20 ? 4 : h <= 40 ? 3 : 2;
+		// one rasterised step = one real screen pixel, so every edge falls exactly on the pixel grid (a fractional
+		// mapping is what made it look soft)
+		int f = Math.max(1, Math.min(6, Math.round(FontOverride.real())));
 		Baked b = bake(h * f);
 		ctx.getMatrices().pushMatrix();
 		ctx.getMatrices().translate((float) x, (float) y);

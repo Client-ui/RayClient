@@ -159,15 +159,20 @@ public final class FontOverride {
 		return variant("inter", real());
 	}
 
-	/** Applies the "for Minecraft" switch and face. Cheap; safe to call every tick. */
+	/** Applies the "for Minecraft" switch and face (needs the font hook). Cheap; safe to call every tick. */
 	public static void update() {
 		if (!(manager instanceof RayFontOverrides access)) return;
 		RayConfig c = RayConfig.get();
 		// off = Minecraft's real default font; on = the chosen face at the detail that matches the GUI scale
-		Identifier want = c.minecraftFontOn ? faceId(c.minecraftFont, false, (float) UiScale.guiScale(), false) : VANILLA_ID;
-		if (!want.equals(applied)) {
-			applied = want;
-			appliedMap = Map.of(DEFAULT, want);
+		if (!c.minecraftFontOn) { // off: Minecraft draws its own text with its own font, untouched
+			applied = null;
+			appliedMap = Map.of();
+		} else {
+			Identifier want = faceId(c.minecraftFont, false, (float) UiScale.guiScale(), false);
+			if (!want.equals(applied)) {
+				applied = want;
+				appliedMap = Map.of(DEFAULT, want);
+			}
 		}
 		access.ray$setOverrides(appliedMap); // re-applied every call so a resource reload cannot undo it
 	}
@@ -212,16 +217,7 @@ public final class FontOverride {
 	}
 
 	public static void openFolder() {
-		Path p = fontsFolder();
-		Thread t = new Thread(() -> {
-			try {
-				if (java.awt.Desktop.isDesktopSupported()) java.awt.Desktop.getDesktop().open(p.toFile());
-			} catch (Throwable ignored) {
-				// the path is shown on the settings page as a fallback
-			}
-		}, "ray-open-folder");
-		t.setDaemon(true);
-		t.start();
+		Sys.openFolder(fontsFolder());
 	}
 
 	/**

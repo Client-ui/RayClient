@@ -500,8 +500,12 @@ public final class Features {
 			() -> { // the card's switch turns both uses on or both off
 				RayConfig c = RayConfig.get();
 				boolean any = c.minecraftFontOn || c.clientFontOn;
-				c.minecraftFontOn = !any;
-				c.clientFontOn = !any;
+				if (any) {
+					c.minecraftFontOn = false;
+					c.clientFontOn = false;
+				} else {
+					c.clientFontOn = true;
+				}
 			},
 			(s, ui, f) -> fontRows(ui, f)));
 
@@ -749,13 +753,14 @@ public final class Features {
 	private static void fontRows(Ui ui, Ui.Form f) {
 		RayConfig c = RayConfig.get();
 		f.section("Better Font");
-		ui.toggle(f.full(), "Use it in Minecraft (chat, menus, signs, tooltips)", c.minecraftFontOn, () -> c.minecraftFontOn = !c.minecraftFontOn);
 		ui.toggle(f.full(), "Use it in Ray Client (menus and HUD)", c.clientFontOn, () -> c.clientFontOn = !c.clientFontOn);
 		ui.toggle(f.full(), "Pixel-sharp text in Ray Client (Inter)", c.pixelFont, () -> c.pixelFont = !c.pixelFont);
-		f.note("Both uses are on by default. Pixel-sharp text draws Inter as pre-hinted bitmaps, one texture pixel per screen pixel, so every letter is crisp and evenly spaced at any size; turn it off to use the smooth TrueType font instead. Turning a use off brings back Minecraft's own font for it.");
-		f.note(FontOverride.supported() ? "Minecraft text switching: active." : "Minecraft text switching: NOT available on this Minecraft version (the client's own text still switches).");
-		if (!FontOverride.supported()) {
-			f.note("The font hook could not attach on this Minecraft version. The font still applies (it ships as a resource), but switching it off for Minecraft and choosing other faces for Minecraft will not work.");
+		f.note("Pixel-sharp text draws Inter as pre-hinted bitmaps, one texture pixel per screen pixel, so every letter is crisp and evenly spaced at any size; turn it off for the smooth TrueType font. With Ray Client off, the client's text uses Minecraft's own font.");
+		if (FontOverride.supported()) {
+			ui.toggle(f.full(), "Also use it in Minecraft (chat, menus, signs, tooltips)", c.minecraftFontOn, () -> c.minecraftFontOn = !c.minecraftFontOn);
+			f.note("Off by default: Minecraft's own pixel font is designed for Minecraft's text.");
+		} else {
+			f.note("Minecraft's own text always keeps Minecraft's font on this version: the font hook that would let the client change it cannot attach.");
 		}
 		f.section("Pick a font");
 		for (int i = 1; i < FontOverride.NAMES.length; i++) {

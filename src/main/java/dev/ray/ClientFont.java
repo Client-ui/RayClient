@@ -160,6 +160,24 @@ public final class ClientFont {
 	/** Text with a 1px dark outline on four sides (the outline keeps the alpha of the text colour). */
 	public static void drawOutlined(DrawContext ctx, TextRenderer tr, String s, int x, int y, int color) {
 		int oc = (int) ((((long) (color >>> 24)) * 0xD0 / 0xFF) << 24);
+		Identifier id = FontOverride.clientFontId();
+		Text t = FontOverride.isPixel(id) ? styled(CLIENT.sub(id), id, s) : null;
+		if (t != null) {
+			// pixel font: the outline is ONE SCREEN PIXEL wide (one layout unit would be 2 to 3 pixels, a heavy double image)
+			float real = Math.max(0.5f, FontOverride.real());
+			int dy = Math.round(7.6f * real) - 7;
+			int r = Math.max(1, Math.round(real / 3f));
+			ctx.getMatrices().pushMatrix();
+			ctx.getMatrices().translate((float) x, (float) y);
+			ctx.getMatrices().scale(1f / real, 1f / real);
+			ctx.drawText(tr, t, -r, dy, oc, false);
+			ctx.drawText(tr, t, r, dy, oc, false);
+			ctx.drawText(tr, t, 0, dy - r, oc, false);
+			ctx.drawText(tr, t, 0, dy + r, oc, false);
+			ctx.drawText(tr, t, 0, dy, color, false);
+			ctx.getMatrices().popMatrix();
+			return;
+		}
 		draw(ctx, tr, s, x - 1, y, oc, false);
 		draw(ctx, tr, s, x + 1, y, oc, false);
 		draw(ctx, tr, s, x, y - 1, oc, false);

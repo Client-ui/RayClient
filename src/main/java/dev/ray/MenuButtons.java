@@ -33,19 +33,22 @@ public final class MenuButtons {
 		boolean hero = pause && text.startsWith("Ray Client");
 		float hv = UI.anim(id, hovered && active);
 		float fv = UI.anim(id + "f", focused && active);
-		int r = 5;
+		int r = 7;
 		if (hero) {
-			UI.accentFill(x, y, w, h, r, hv);
-			int lh = Math.max(12, h - 10);
+			// a quiet dark card with the logo; the accent only appears on hover
+			UI.rrect(x, y, w, h, r, Theme.mix(Theme.CARD, Theme.CARD_HOVER, hv));
+			UI.ring(x, y, w, h, r, Theme.mix(Theme.LINE, accent, Math.max(hv, fv)));
+			int lh = Math.max(12, h - 12);
 			Logo.draw(ctx, x + 10, y + (h - lh) / 2, lh, 1f);
-			UI.headCenter("Ray Client", x + w / 2, y + (h - 8) / 2 + 1, Ui.onAccent());
-			UI.right("HUD & Mods", x + w - 10, y + (h - 8) / 2 + 1, Theme.fade(Ui.onAccent(), 0.75f));
+			UI.headText("Ray Client", x + 14 + Logo.width(lh) + 6, y + (h - 8) / 2 + 1, 0xFFFFFFFF);
+			UI.chevron(x + w - 14 + Math.round(hv * 2f), y + h / 2 - 2, Theme.mix(Theme.MUTE, accent, hv));
+			UI.right("HUD & Mods", x + w - 26, y + (h - 8) / 2 + 1, Theme.mix(Theme.DIM, 0xFFFFFFFF, hv));
 			return true;
 		}
-		UI.rrect(x, y, w, h, r, active ? Ui.white(0.08f + 0.07f * hv) : Ui.white(0.035f));
-		if (active && hv > 0.05f) UI.ring(x, y, w, h, r, Ui.white(0.18f * hv));
+		UI.rrect(x, y, w, h, r, active ? Theme.mix(Theme.CARD, Theme.CARD_HOVER, hv) : 0xFF0F0E12);
+		UI.ring(x, y, w, h, r, Theme.mix(Theme.LINE, 0xFF3A3542, active ? hv : 0f));
 		if (active && fv > 0.02f) UI.ring(x, y, w, h, r, Theme.fade(accent, 0.8f * fv));
-		UI.center(text, x + w / 2, y + (h - 8) / 2 + 1, active ? Theme.mix(0xFFE0E0EA, 0xFFFFFFFF, hv) : Theme.MUTE);
+		UI.center(text, x + w / 2, y + (h - 8) / 2 + 1, active ? Theme.mix(0xFFE4E4E8, 0xFFFFFFFF, hv) : Theme.MUTE);
 		return true;
 	}
 }

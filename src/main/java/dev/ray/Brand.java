@@ -52,7 +52,7 @@ public final class Brand {
 
 	/** Same, with the stars shifting a little by the cursor (px, py in -1..1); nearer stars move more. */
 	public static void backdrop(DrawContext ctx, int w, int h, long timeMs, float alpha, float parX, float parY) {
-		ctx.fillGradient(0, 0, w, h, Theme.fade(0xFF050507, alpha), Theme.fade(0xFF0C0C11, alpha));
+		ctx.fillGradient(0, 0, w, h, Theme.fade(0xFF000000, alpha), Theme.fade(0xFF0C0B0E, alpha));
 		float t = timeMs / 1000f;
 		for (int i = 0; i < 56; i++) {
 			int layer = i % 3;

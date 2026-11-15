@@ -160,15 +160,14 @@ public class HudEditorScreen extends Screen {
 			int lh = 46;
 			Brand.logo(ctx, ccx, top, lh, open, now);
 
-			// one dark settings button, like a game's own menu button
-			int bw = 124, bh2 = 26, bx2 = ccx - bw / 2, by2 = top + lh + 12;
+			// one dark settings button, like the launcher's cards
+			int bw = 132, bh2 = 28, bx2 = ccx - bw / 2, by2 = top + lh + 12;
 			float bv = ui.anim("hudmain", ui.over(bx2, by2, bw, bh2));
-			ui.rrect(bx2, by2, bw, bh2, 5, Theme.mix(0xF0101014, 0xF01C1C22, bv));
-			ui.ring(bx2, by2, bw, bh2, 5, Ui.white(0.10f + 0.10f * bv));
+			ui.rrect(bx2, by2, bw, bh2, 7, Theme.mix(0xF0141217, 0xF01B1920, bv));
+			ui.ring(bx2, by2, bw, bh2, 7, Theme.mix(Theme.LINE, Theme.accent(), bv));
 			String lbl = "RAY SETTINGS";
-			ui.spaced(lbl, ccx - ui.spacedWidth(lbl, 2) / 2, by2 + 9, 0xFFFFFFFF, 2);
+			ui.trackedHead(lbl, ccx - ui.trackedWidth(lbl, 2, true) / 2, by2 + 10, 0xFFFFFFFF, 2);
 			ui.click("hudmain", bx2, by2, bw, bh2, () -> openMods("ALL", null));
-
 		}
 
 		ui.poll();

@@ -256,7 +256,7 @@ public class RayConfig {
 	public int sortMode = 0;
 	// fonts: index into FontOverride.NAMES (0 = Minecraft default, 1-5 built in, 6 = your own)
 	/** Replaces Minecraft's own font everywhere (chat, menus, tooltips...). Never touches the client's text. */
-	public boolean minecraftFontOn = true;
+	public boolean minecraftFontOn = false;
 	public int minecraftFont = 1;
 	/** Font for all of the client's own text (Ray menus and HUD modules). */
 	public boolean clientFontOn = true;
@@ -379,12 +379,13 @@ public class RayConfig {
 			}
 			uiSchema = 3;
 		}
-		if (uiSchema < 4) { // Better Font: both uses on by default, one shared face
-			minecraftFontOn = true;
+		if (uiSchema < 5) { // Better Font: the client's text on, Minecraft's own text left as Minecraft draws it (one shared face)
+			minecraftFontOn = false;
 			clientFontOn = true;
+			pixelFont = true;
 			minecraftFont = 1;
 			clientFont = 1;
-			uiSchema = 4;
+			uiSchema = 5;
 		}
 		accent = clamp(accent, 0, Theme.COLORS.length - 1);
 		hudOpacity = clamp(hudOpacity, 0, 100);
@@ -490,7 +491,7 @@ public class RayConfig {
 			loaded.totalSeconds = old.totalSeconds;
 			loaded.favorites = old.favorites;
 			loaded.lastDeath = old.lastDeath;
-			loaded.uiSchema = 4;
+			loaded.uiSchema = 5;
 			if (loaded.modules == null) loaded.modules = new HashMap<>();
 			if (loaded.positions == null) loaded.positions = new HashMap<>();
 			if (loaded.styles == null) loaded.styles = new HashMap<>();

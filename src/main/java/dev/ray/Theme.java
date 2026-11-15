@@ -4,27 +4,29 @@ import java.awt.Color;
 
 public final class Theme {
 	/** Accent themes: each has a main colour and a second colour (used for the gradient end). Ember is the logo's colour. */
-	public static final int[] COLORS = {0xFFFFA45C, 0xFF5CC8FF, 0xFFB58CFF, 0xFF5CF2B0, 0xFFFF8FB5, 0xFFFFD65C, 0xFFE9EEFA, 0xFFFF6B6B};
-	public static final int[] COLORS2 = {0xFFFF4D3D, 0xFF3D6BFF, 0xFF7B4DFF, 0xFF18B98A, 0xFFE8467C, 0xFFFF9F2E, 0xFF9DB4D6, 0xFFC81E3C};
+	public static final int[] COLORS = {0xFFFF8A2B, 0xFF5CC8FF, 0xFFB58CFF, 0xFF5CF2B0, 0xFFFF8FB5, 0xFFFFD65C, 0xFFE9EEFA, 0xFFFF6B6B};
+	public static final int[] COLORS2 = {0xFFE8630F, 0xFF3D6BFF, 0xFF7B4DFF, 0xFF18B98A, 0xFFE8467C, 0xFFFF9F2E, 0xFF9DB4D6, 0xFFC81E3C};
 	public static final String[] NAMES = {"Ember", "Ocean", "Violet", "Mint", "Rose", "Gold", "Ice", "Crimson"};
 
 	public static final String[] PALETTE_NAMES = {"Default", "White", "Red", "Green", "Blue", "Yellow", "Cyan", "Pink", "Orange", "Purple"};
 	private static final int[] PALETTE = {0, 0xFFFFFFFF, 0xFFEF4444, 0xFF22C55E, 0xFF3B82F6, 0xFFFACC15, 0xFF22D3EE, 0xFFF472B6, 0xFFF97316, 0xFF8B5CF6};
 
 	// ---- UI palette: near-black glass, white text, one accent used only for state ----
-	public static final int BG_DEEP = 0xFF040406;
-	public static final int BG = 0xFF08080B;
-	public static final int PANEL = 0xFF0E0E13;
-	public static final int PANEL_TOP = 0xFF16161C;
-	public static final int CARD = 0xFF121217;
-	public static final int CARD_TOP = 0xFF18181F;
-	public static final int CARD_HOVER = 0xFF1F1F27;
+	public static final int BG_DEEP = 0xFF000000;
+	public static final int BG = 0xFF0C0B0E;
+	public static final int PANEL = 0xFF0C0B0E;
+	public static final int PANEL_TOP = 0xFF141217;
+	public static final int CARD = 0xFF141217;
+	public static final int CARD_TOP = 0xFF141217;
+	public static final int CARD_HOVER = 0xFF1B1920;
 	/** Hairlines are translucent white so they pick up whatever is behind the glass. */
+	/** Hairline colour of cards and inputs (as in the launcher). */
+	public static final int LINE = 0xFF26222C;
 	public static final int STROKE = 0x24FFFFFF;
 	public static final int STROKE_HI = 0x40FFFFFF;
 	public static final int TEXT = 0xFFF5F5F8;
-	public static final int DIM = 0xFFA8A8B4;
-	public static final int MUTE = 0xFF6E6E7C;
+	public static final int DIM = 0xFFA3A2AA;
+	public static final int MUTE = 0xFF6F6D77;
 	public static final int GOOD = 0xFF4ADE9A;
 	public static final int BAD = 0xFFFF5D6C;
 	public static final int BOLT = 0xFFFFB45C;

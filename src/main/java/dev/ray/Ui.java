@@ -243,7 +243,7 @@ public final class Ui {
 
 		Corner(int r) {
 			this.r = r;
-			if (r <= 6) {
+			if (r <= 4) {
 				// small radius: a 1-2 pixel cut corner (octagon). Crisp, and only a handful of fills.
 				int k = Math.max(2, r / 2);
 				edge = k;
@@ -486,22 +486,22 @@ public final class Ui {
 		if (w <= 2 || h <= 2) return;
 		r = Math.min(r, Math.min(w, h) / 2);
 		rrectGrad(x, y, w, h, r, top, bottom);
-		rimGlass(x, y, w, h, r, rimHi * 0.7f, rimLo);
+		ring(x, y, w, h, r, Theme.fade(Theme.LINE, Math.min(1f, 0.55f + rimHi)));
 	}
 
 	/** A floating glass window: soft shadow, the pane, and a faint warm bounce light along the bottom edge. */
 	public void surface(int x, int y, int w, int h, int r) {
 		r = Math.min(r, 14);
 		shadow(x, y, w, h, r);
-		glassPanel(x, y, w, h, r, glass(0xFF1B1B21), glass(0xFF0C0C10), 0.22f, 0.08f);
+		rrect(x, y, w, h, r, glass(0xFF0C0B0E));
+		ring(x, y, w, h, r, Theme.LINE);
 	}
 
 	/** A recessed field or row inside a window: a faint lighter tint and a hairline. hover is 0..1. */
 	public void inset(int x, int y, int w, int h, int r, float hover) {
-		r = Math.min(r, 6); // controls use cut corners everywhere
-		rrect(x, y, w, h, r, white(0.05f + 0.045f * hover));
-		// borderless like a settings list; the hairline only appears under the cursor (saves a lot of draw calls)
-		if (hover > 0.05f) ring(x, y, w, h, r, Theme.mix(white(0.12f), Theme.fade(Theme.accent(), 0.60f), hover * 0.7f));
+		r = Math.min(r, 7);
+		rrect(x, y, w, h, r, Theme.mix(Theme.CARD, Theme.CARD_HOVER, hover));
+		if (hover > 0.05f) ring(x, y, w, h, r, Theme.mix(Theme.LINE, Theme.fade(Theme.accent(), 0.7f), hover));
 	}
 
 	/** A 1px line that is brightest in the middle and fades toward both ends, in any colour. */
@@ -720,6 +720,34 @@ public final class Ui {
 		ClientFont.draw(ctx, tr, s, rx - ClientFont.width(tr, s), y, c, false);
 	}
 
+	/** Small upper-case label with a little tracking (section labels such as GENERAL). Always one draw per letter. */
+	public void tracked(String s, int x, int y, int c, int sp) {
+		int cx = x;
+		for (int i = 0; i < s.length(); i++) {
+			String g = ch(s.charAt(i));
+			if (s.charAt(i) != ' ') ClientFont.draw(ctx, tr, g, cx, y, c, false);
+			cx += ClientFont.width(tr, g) + sp;
+		}
+	}
+
+	public void trackedHead(String s, int x, int y, int c, int sp) {
+		int cx = x;
+		for (int i = 0; i < s.length(); i++) {
+			String g = ch(s.charAt(i));
+			if (s.charAt(i) != ' ') ClientFont.drawHead(ctx, tr, g, cx, y, c, false);
+			cx += ClientFont.widthHead(tr, g) + sp;
+		}
+	}
+
+	public int trackedWidth(String s, int sp, boolean head) {
+		int w = 0;
+		for (int i = 0; i < s.length(); i++) {
+			String g = ch(s.charAt(i));
+			w += (head ? ClientFont.widthHead(tr, g) : ClientFont.width(tr, g)) + sp;
+		}
+		return Math.max(0, w - sp);
+	}
+
 	/** Heading text: the bold face of the client font. */
 	public void headText(String s, int x, int y, int c) {
 		ClientFont.drawHead(ctx, tr, s, x, y, c, false);
@@ -846,8 +874,9 @@ public final class Ui {
 		float a = anim("lb" + label + x, hov);
 		float p = anim("lbp" + label + x, held(x, y, w, h));
 		int yy = y + Math.round(p);
-		rrect(x, yy, w, h, 5, Theme.mix(white(0.07f), Theme.fade(color, 0.30f), 0.35f + 0.65f * a));
-		center(label, x + w / 2, yy + (h - 8) / 2, Theme.mix(0xFFE4E4EC, 0xFFFFFFFF, a));
+		rrect(x, yy, w, h, 7, Theme.mix(Theme.CARD, Theme.fade(color, 0.28f), 0.2f + 0.8f * a));
+		ring(x, yy, w, h, 7, Theme.mix(Theme.LINE, Theme.fade(color, 0.85f), a));
+		center(label, x + w / 2, yy + (h - 8) / 2, Theme.mix(0xFFE4E4E8, 0xFFFFFFFF, a));
 		click("lb" + label + x + "," + y, x, y, w, h, action);
 	}
 
@@ -857,10 +886,9 @@ public final class Ui {
 		float a = anim("pl" + label + x + "," + y, hov);
 		float p = anim("plp" + label + x + "," + y, enabled && held(x, y, w, h));
 		int yy = y + Math.round(p);
-		int r = 5;
-		rrect(x, yy, w, h, r, enabled ? white(0.07f + 0.06f * a) : white(0.03f));
-		if (enabled && a > 0.05f) ring(x, yy, w, h, r, white(0.16f * a));
-		center(label, x + w / 2, yy + (h - 8) / 2, enabled ? Theme.mix(0xFFD8D8E2, 0xFFFFFFFF, a) : Theme.MUTE);
+		rrect(x, yy, w, h, 7, enabled ? Theme.mix(Theme.CARD, Theme.CARD_HOVER, a) : 0xFF0F0E12);
+		ring(x, yy, w, h, 7, Theme.mix(Theme.LINE, 0xFF3A3542, a));
+		center(label, x + w / 2, yy + (h - 8) / 2, enabled ? Theme.mix(0xFFE4E4E8, 0xFFFFFFFF, a) : Theme.MUTE);
 		if (enabled) click("pl" + label + x + "," + y, x, y, w, h, action);
 	}
 
@@ -870,8 +898,7 @@ public final class Ui {
 		float a = anim("pr" + label + x + "," + y, hov);
 		float p = anim("prp" + label + x + "," + y, held(x, y, w, h));
 		int yy = y + Math.round(p);
-		int r = 5;
-		accentFill(x, yy, w, h, r, a);
+		rrect(x, yy, w, h, 7, Theme.mix(Theme.accent(), 0xFFFFFFFF, 0.10f * a));
 		center(label, x + w / 2, yy + (h - 8) / 2, onAccent());
 		click("pr" + label + x + "," + y, x, y, w, h, action);
 	}
@@ -906,17 +933,19 @@ public final class Ui {
 
 	/** An iOS-style switch. k is 0..1 (animated). */
 	public void switchControl(int tx, int ty, float k) {
-		if (k < 0.98f) rrect(tx, ty, 34, 18, 9, white(0.13f * (1f - k)));
-		if (k > 0.02f) rrect(tx, ty, 34, 18, 9, Theme.fade(Theme.accent(), k));
+		rrect(tx, ty, 34, 18, 9, Theme.mix(0xFF2A2630, Theme.accent(), k));
 		int kx = tx + 9 + Math.round(k * 16f), ky = ty + 9;
-		circle(kx, ky, 7, Theme.mix(0xFFCFCFD8, Ui.onAccent() == 0xFFFFFFFF ? 0xFFFFFFFF : 0xFF121216, k));
+		circle(kx, ky, 6, Theme.mix(0xFFB8B7B9, 0xFF141217, k));
 	}
 
 	public void toggle(int[] r, String name, boolean on, Runnable flip) {
 		card(r, "t" + name);
 		float k = anim("k" + name, on);
-		text(fit(name, r[2] - 64), r[0] + 11, r[1] + 8, Theme.mix(Theme.DIM, Theme.TEXT, 0.4f + 0.6f * k));
-		switchControl(r[0] + r[2] - 44, r[1] + 3, k);
+		int sx = r[0] + r[2] - 44;
+		String st = on ? "On" : "Off";
+		text(fit(name, r[2] - 64 - w("Off")), r[0] + 11, r[1] + 8, Theme.mix(Theme.DIM, Theme.TEXT, 0.4f + 0.6f * k));
+		right(st, sx - 8, r[1] + 8, Theme.mix(Theme.MUTE, Theme.DIM, k));
+		switchControl(sx, r[1] + 3, k);
 		click("t" + name, r[0], r[1], r[2], H, flip);
 	}
 
@@ -975,9 +1004,9 @@ public final class Ui {
 		float a = anim("b" + label, hov);
 		float p = anim("bp" + label, held(r[0], r[1], r[2], H));
 		int yy = r[1] + Math.round(p);
-		rrect(r[0], yy, r[2], H, 5, white(0.07f + 0.06f * a));
-		if (a > 0.05f) ring(r[0], yy, r[2], H, 5, white(0.16f * a));
-		center(label, r[0] + r[2] / 2, yy + 8, Theme.mix(0xFFDADAE4, 0xFFFFFFFF, a));
+		rrect(r[0], yy, r[2], H, 7, Theme.mix(Theme.CARD, Theme.CARD_HOVER, a));
+		ring(r[0], yy, r[2], H, 7, Theme.mix(Theme.LINE, 0xFF3A3542, a));
+		center(label, r[0] + r[2] / 2, yy + 8, Theme.mix(0xFFE4E4E8, 0xFFFFFFFF, a));
 		click("b" + label, r[0], r[1], r[2], H, action);
 	}
 
@@ -1117,11 +1146,9 @@ public final class Ui {
 
 		public void section(String title) {
 			flush();
-			y += 5;
-			ui.headText(title, x + 2, y, Theme.TEXT);
-			int lx = x + 2 + ui.headWidth(title) + 10;
-			ui.rect(lx, y + 5, Math.max(0, x + w - lx), 1, Ui.white(0.10f));
-			y += 17;
+			y += 6;
+			ui.tracked(title.toUpperCase(), x + 2, y, Theme.MUTE, 1);
+			y += 15;
 		}
 
 		public void note(String s) {
