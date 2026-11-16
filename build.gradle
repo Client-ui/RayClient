@@ -18,17 +18,21 @@ dependencies {
 
 processResources {
 	inputs.property "version", project.version
+	inputs.property "minecraft_version", project.minecraft_version
+	inputs.property "java_version", project.java_version
 	filesMatching("fabric.mod.json") {
-		expand "version": inputs.properties.version
+		expand "version": inputs.properties.version,
+			"minecraft_version": inputs.properties.minecraft_version,
+			"java_version": inputs.properties.java_version
 	}
 }
 
 tasks.withType(JavaCompile).configureEach {
-	options.release = 21
+	options.release = Integer.parseInt(project.java_version)
 }
 
 java {
 	withSourcesJar()
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.toVersion(project.java_version)
+	targetCompatibility = JavaVersion.toVersion(project.java_version)
 }
