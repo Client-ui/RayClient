@@ -31,6 +31,14 @@ tasks.withType(JavaCompile).configureEach {
 	options.release = Integer.parseInt(project.java_version)
 }
 
+sourceSets {
+	main {
+		java {
+			srcDir "src/compat_${project.compat}/java"
+		}
+	}
+}
+
 java {
 	withSourcesJar()
 	sourceCompatibility = JavaVersion.toVersion(project.java_version)

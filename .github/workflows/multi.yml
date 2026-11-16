@@ -20,17 +20,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { mc: "1.21.11", java: "21" }
-          - { mc: "1.21.10", java: "21" }
-          - { mc: "1.21.8", java: "21" }
-          - { mc: "1.21.5", java: "21" }
-          - { mc: "1.21.4", java: "21" }
-          - { mc: "1.21.1", java: "21" }
-          - { mc: "1.21", java: "21" }
-          - { mc: "1.20.1", java: "17" }
-          - { mc: "1.19.4", java: "17" }
-          - { mc: "1.19", java: "17" }
-          - { mc: "1.16.5", java: "17" }
+          - { mc: "1.21.11", java: "21", compat: "new" }
+          - { mc: "1.21.10", java: "21", compat: "new" }
+          - { mc: "1.21.9", java: "21", compat: "new" }
+          - { mc: "1.21.8", java: "21", compat: "old" }
+          - { mc: "1.21.7", java: "21", compat: "old" }
+          - { mc: "1.21.6", java: "21", compat: "old" }
+          - { mc: "1.21.5", java: "21", compat: "old" }
+          - { mc: "1.21.4", java: "21", compat: "old" }
+          - { mc: "1.21.1", java: "21", compat: "old" }
+          - { mc: "1.21", java: "21", compat: "old" }
 
     name: Minecraft ${{ matrix.mc }}
     steps:
@@ -68,6 +67,7 @@ jobs:
           -Pyarn_mappings=${{ steps.deps.outputs.yarn }}
           -Pfabric_version=${{ steps.deps.outputs.api }}
           -Pjava_version=${{ matrix.java }}
+          -Pcompat=${{ matrix.compat }}
           -Parchives_base_name=ray-client-mc${{ matrix.mc }}
 
       - uses: actions/upload-artifact@v4

@@ -56,30 +56,29 @@ public class RayClient implements ClientModInitializer {
 		CombatTracker.init();
 		PauseButton.register();
 
-		KeyBinding.Category category = KeyBinding.Category.create(Identifier.of(MOD_ID, "main"));
 		menuKey = KeyBindingHelper.registerKeyBinding(
-			new KeyBinding("key.ray.menu", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT_SHIFT, category));
+			KeyCompat.make("key.ray.menu", GLFW.GLFW_KEY_RIGHT_SHIFT));
 		zoomKey = KeyBindingHelper.registerKeyBinding(
-			new KeyBinding("key.ray.zoom", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_C, category));
+			KeyCompat.make("key.ray.zoom", GLFW.GLFW_KEY_C));
 		waypointKey = KeyBindingHelper.registerKeyBinding(
-			new KeyBinding("key.ray.waypoint", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_B, category));
+			KeyCompat.make("key.ray.waypoint", GLFW.GLFW_KEY_B));
 
 		copyKey = KeyBindingHelper.registerKeyBinding(
-			new KeyBinding("key.ray.copycoords", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
+			KeyCompat.make("key.ray.copycoords", GLFW.GLFW_KEY_UNKNOWN));
 		swKey = KeyBindingHelper.registerKeyBinding(
-			new KeyBinding("key.ray.stopwatch", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
+			KeyCompat.make("key.ray.stopwatch", GLFW.GLFW_KEY_UNKNOWN));
 		swResetKey = KeyBindingHelper.registerKeyBinding(
-			new KeyBinding("key.ray.stopwatchreset", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
+			KeyCompat.make("key.ray.stopwatchreset", GLFW.GLFW_KEY_UNKNOWN));
 
 		lyricsKey = KeyBindingHelper.registerKeyBinding(
-			new KeyBinding("key.ray.lyricsresync", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
+			KeyCompat.make("key.ray.lyricsresync", GLFW.GLFW_KEY_UNKNOWN));
 
 		lyricsEarlierKey = KeyBindingHelper.registerKeyBinding(
-			new KeyBinding("key.ray.lyricsearlier", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
+			KeyCompat.make("key.ray.lyricsearlier", GLFW.GLFW_KEY_UNKNOWN));
 		lyricsLaterKey = KeyBindingHelper.registerKeyBinding(
-			new KeyBinding("key.ray.lyricslater", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
+			KeyCompat.make("key.ray.lyricslater", GLFW.GLFW_KEY_UNKNOWN));
 		lyricsToggleKey = KeyBindingHelper.registerKeyBinding(
-			new KeyBinding("key.ray.lyricstoggle", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
+			KeyCompat.make("key.ray.lyricstoggle", GLFW.GLFW_KEY_UNKNOWN));
 
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.of(MOD_ID, "hud"), (ctx, tc) -> Safe.render("HUD", Hud::render, ctx, tc));
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.of(MOD_ID, "lyrics"), (ctx, tc) -> Safe.render("Lyric Sync", LyricsHud::render, ctx, tc));
