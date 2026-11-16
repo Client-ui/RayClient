@@ -192,14 +192,15 @@ public class RayScreen extends Screen {
 		int off = Math.round(scrollCur);
 
 		// floating header bar, then the body below it
-		ui.surface(px, py, pw, HEADER_H, 12);
+		// ONE window (no boxes inside boxes): a single surface, with a hairline under the header
+		ui.surface(px, py, pw, ph, 12);
+		ui.rect(px + 1, py + HEADER_H, pw - 2, 1, Theme.LINE);
 		drawHeader(px, py, pw);
 		int bodyTop = py + HEADER_H + 8, bodyH = ph - HEADER_H - 8;
 		if (page == 0) {
 			drawMods(ctx, px, bodyTop, pw, bodyH, off);
 		} else {
 			if (getFocused() != null) setFocused(null);
-			ui.surface(px, bodyTop, pw, bodyH, 12);
 			drawPage(px, bodyTop, pw, bodyH, off);
 		}
 		drawTooltip(now);
@@ -311,7 +312,7 @@ public class RayScreen extends Screen {
 		drawSidebar(px, top, SIDE_W, bodyH);
 
 		int cardX = px + SIDE_W + 8, cardW = pw - SIDE_W - 8;
-		ui.surface(cardX, top, cardW, bodyH, 12);
+		ui.rect(cardX - 4, top + 6, 1, bodyH - 12, Theme.LINE); // a hairline between the list and the sidebar
 		int left = cardX + 14, innerW = cardW - 28;
 		int bodyY = top + 14, innerH = bodyH - 28;
 
@@ -457,7 +458,6 @@ public class RayScreen extends Screen {
 		sideW = w;
 		sideH = h;
 		int accent = Theme.accent();
-		ui.surface(x, y, w, h, 12);
 
 		if (profilesDirty || System.currentTimeMillis() - profilesTime > 1500L) {
 			profileNames = Profiles.list();

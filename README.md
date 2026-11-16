@@ -4,7 +4,9 @@ A client-side Fabric quality-of-life and visual customization mod for Minecraft 
 
 ## What is new: the redesign
 
-- **Start menu: "Orbit and Dock"**: the logo sits inside two faint, slowly turning orbits with small satellites (like the logo's own ring), with the stars shifting slightly as you move the mouse. The actions live in a glass dock at the bottom: icons swell toward the cursor and name themselves when hovered. No cards or tips; update news is one quiet line. (Magnification respects the Animations setting.)
+- **Start menu**: laid out like the Ray Launcher's home screen: the logo top left, a big "Ray Client" wordmark with Singleplayer and Multiplayer, slow orange silk ribbons across the right (shifting slightly with the mouse), and a row of cards for Mods, Profiles, Options and Quit.
+- **Pause (Esc) menu**: one card with the logo and "PAUSED", an orange "Back to Game", a quiet red "Save and Quit", and clean list rows.
+- **More modules**: Free Slots, Item Total, Saturation, Sea Level, Daylight Timer and Connection quality (46+ text modules now).
 - **Matches the Ray Launcher**: near-black surfaces (`#0C0B0E`, cards `#141217`), the launcher's orange (`#FF8A2B`), Inter, tracked-capital section labels, text tabs with an underline, a bordered pill for the current page, dark cards with an orange Enable button, and the launcher's toggle (dark knob on an orange track, with On/Off beside it). The accent is used only where something is on or primary.
 - **Logo everywhere**: the orbiting-R logo is drawn as crisp vector shapes (no texture) on the title screen, loading screen, menu header, pause menu, HUD editor and as the mod icon.
 - **Accent themes**: Ember (the logo's orange) by default, plus Ocean, Violet, Mint, Rose, Gold, Ice, Crimson and Rainbow.

@@ -37,22 +37,25 @@ public final class PauseButton {
 				.build();
 			Screens.getButtons(screen).add(button);
 
-			final int headerTop = top, hl = left, hr = right;
-			ScreenEvents.afterRender(screen).register((s, ctx, mouseX, mouseY, tickDelta) -> {
+			final int headerTop = top, hl = left, hr = right, heroBottom = y + 24;
+			// one card behind the whole menu (drawn before the buttons, so they sit on it)
+			ScreenEvents.beforeRender(screen).register((s, ctx, mouseX, mouseY, tickDelta) -> {
 				if (!RayConfig.get().styledMenuButtons) return;
 				MinecraftClient mc = MinecraftClient.getInstance();
 				UI.begin(ctx, mc.textRenderer, -1, -1);
-				int accent = Theme.accent();
-				int w = hr - hl, h = 30, hy = headerTop - h - 8;
-				if (hy < 4) return;
-				UI.surface(hl, hy, w, h, 10);
-				int lh = h - 8;
-				Logo.draw(ctx, hl + 10, hy + 4, lh, 1f);
-				int tx = hl + 10 + Logo.width(lh) + 8;
-				UI.headText("Ray Client", tx, hy + 6, 0xFFFFFFFF);
-				UI.text("Paused  -  v" + RayClient.VERSION, tx, hy + 17, Theme.DIM);
-				String hint = "Right Shift: HUD editor";
-				UI.right(hint, hr - 10, hy + 11, Theme.MUTE);
+				int pad = 14, headH = 36;
+				int cx = hl - pad, cw = (hr - hl) + pad * 2;
+				int cy = Math.max(2, headerTop - headH - 8);
+				int ch = heroBottom + pad - cy;
+				UI.surface(cx, cy, cw, ch, 12);
+				if (headerTop - cy >= headH) {
+					int lh = 20, hy = cy + 9;
+					Logo.draw(ctx, cx + pad, hy, lh, 1f);
+					UI.trackedHead("RAY CLIENT", cx + pad + Logo.width(lh) + 8, hy + 6, 0xFFFFFFFF, 2);
+					String state = "PAUSED";
+					UI.tracked(state, cx + cw - pad - UI.trackedWidth(state, 1, false), hy + 7, Theme.MUTE, 1);
+					UI.rect(cx + 1, cy + headH - 2, cw - 2, 1, Theme.LINE);
+				}
 			});
 		});
 	}

@@ -491,8 +491,7 @@ public final class Ui {
 
 	/** A floating glass window: soft shadow, the pane, and a faint warm bounce light along the bottom edge. */
 	public void surface(int x, int y, int w, int h, int r) {
-		r = Math.min(r, 14);
-		shadow(x, y, w, h, r);
+		r = Math.min(r, 14); // flat like the launcher: no drop shadow
 		rrect(x, y, w, h, r, glass(0xFF0C0B0E));
 		ring(x, y, w, h, r, Theme.LINE);
 	}

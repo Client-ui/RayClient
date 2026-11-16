@@ -299,6 +299,35 @@ public final class Modules {
 			if (fmt == 2) return List.of("Durability: " + left);
 			return List.of(String.format("Durability: %d/%d (%d%%)", left, s.getMaxDamage(), left * 100 / s.getMaxDamage()));
 		});
+
+		// ---- more modules ----
+		text("freeslots", "Free Slots", "Player", false, mc -> {
+			int total = Math.min(36, mc.player.getInventory().size()), free = 0;
+			for (int i = 0; i < total; i++) if (mc.player.getInventory().getStack(i).isEmpty()) free++;
+			return List.of("Free slots: " + free + "/" + total);
+		});
+		text("itemtotal", "Item Total", "Player", false, mc -> {
+			int n = 0;
+			for (int i = 0; i < mc.player.getInventory().size(); i++) n += mc.player.getInventory().getStack(i).getCount();
+			return List.of("Items: " + n);
+		});
+		text("saturation", "Saturation", "Player", false, mc ->
+			List.of(String.format("Saturation: %.1f", mc.player.getHungerManager().getSaturationLevel())));
+		text("sealevel", "Sea Level", "World", false, mc -> {
+			int d = (int) Math.floor(mc.player.getY()) - 63; // sea level is at 63
+			return List.of("Sea level: " + (d >= 0 ? "+" : "") + d);
+		});
+		text("daylight", "Daylight Timer", "World", false, mc -> {
+			long t = mc.world.getTimeOfDay() % 24000L;
+			boolean day = t < 13000L; // night begins at about 13000
+			long sec = (day ? 13000L - t : 24000L - t) / 20L;
+			return List.of((day ? "Night in " : "Day in ") + sec / 60L + ":" + String.format("%02d", sec % 60L));
+		});
+		text("connection", "Connection", "Stats", false, mc -> {
+			int p = pingValue(mc);
+			String q = p <= 0 ? "..." : p < 60 ? "Excellent" : p < 120 ? "Good" : p < 200 ? "Fair" : "Poor";
+			return List.of("Connection: " + q);
+		});
 	}
 
 	private Modules() {}

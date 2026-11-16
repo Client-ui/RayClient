@@ -119,6 +119,12 @@ public final class Features {
 		java.util.Map.entry("targetinfo", "Health and details of the player you are hitting."),
 		java.util.Map.entry("target", "The block you are looking at."),
 		java.util.Map.entry("toolcondition", "The durability of the tool in your hand."),
+		java.util.Map.entry("freeslots", "How many slots in your inventory are still empty."),
+		java.util.Map.entry("itemtotal", "The total number of items you are carrying."),
+		java.util.Map.entry("saturation", "Your hidden saturation level, which decides how fast hunger drops."),
+		java.util.Map.entry("sealevel", "How far above or below sea level you are standing."),
+		java.util.Map.entry("daylight", "A countdown to the next sunset or sunrise."),
+		java.util.Map.entry("connection", "Your connection quality as a word, from your ping."),
 		java.util.Map.entry("waypoints", "A list of your waypoints and how far away they are."),
 		java.util.Map.entry("weather", "The current weather."),
 		java.util.Map.entry("worldtime", "The in-game time of day."),
@@ -206,6 +212,12 @@ public final class Features {
 		ICONS.put("distance", Items.LEATHER_BOOTS);
 		ICONS.put("online", Items.NAME_TAG);
 		ICONS.put("toolcondition", Items.DIAMOND_PICKAXE);
+		ICONS.put("freeslots", Items.CHEST);
+		ICONS.put("itemtotal", Items.HOPPER);
+		ICONS.put("saturation", Items.COOKED_BEEF);
+		ICONS.put("sealevel", Items.COMPASS);
+		ICONS.put("daylight", Items.DAYLIGHT_DETECTOR);
+		ICONS.put("connection", Items.REPEATER);
 		ICONS.put("scoreboard", Items.OAK_SIGN);
 		// standalone features
 		ICONS.put("f_sprint", Items.IRON_BOOTS);
