@@ -40,6 +40,7 @@ if (mcAtLeast(21, 0)) {
 }
 compatSets << (mcAtLeast(21, 2) ? 'stack_overlay' : 'stack_overlay_old')
 compatSets << (mcAtLeast(21, 2) ? 'pixel_argb' : 'pixel_abgr')
+compatSets << (mcAtLeast(21, 2) ? 'useitem_result' : 'useitem_typed')
 compatSets << (mcAtLeast(20, 3) ? 'textjson_codec' : 'textjson_legacy')
 
 // Minecraft 1.20.5 and newer need Java 21; 1.20.4 and older run on Java 17 (and a jar built for 21 would not load there)

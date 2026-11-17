@@ -1,7 +1,8 @@
 package dev.ray;
 import net.minecraft.sound.SoundCategory;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
-import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.Hand;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.entity.LivingEntity;
@@ -33,14 +34,16 @@ public final class CombatTracker {
 			}
 			return ActionResult.PASS;
 		});
-		UseItemCallback.EVENT.register((player, world, hand) -> {
-			MinecraftClient mc = MinecraftClient.getInstance();
-			if (player == mc.player && player.getStackInHand(hand).isOf(Items.ENDER_PEARL)
-				&& System.currentTimeMillis() >= pearlUntil) {
-				pearlUntil = System.currentTimeMillis() + 1000L;
-			}
-			return ActionResult.PASS;
-		});
+		UseItemCompat.register();
+	}
+
+	/** Called when the player uses an item (the callback itself is registered in UseItemCompat). */
+	static void onUseItem(PlayerEntity player, Hand hand) {
+		MinecraftClient mc = MinecraftClient.getInstance();
+		if (player == mc.player && player.getStackInHand(hand).isOf(Items.ENDER_PEARL)
+			&& System.currentTimeMillis() >= pearlUntil) {
+			pearlUntil = System.currentTimeMillis() + 1000L;
+		}
 	}
 
 	/** Plays the hit sound: your own file if one is chosen, otherwise the Minecraft sound. Also used by the Test button. */

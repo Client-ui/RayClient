@@ -16,7 +16,7 @@ Each version gets its own jar. **Actions -> Build all Ray Client versions** buil
 
 The few places where Minecraft's own code differs live in `src/compat/<name>/`:
 `key_*` (key binding categories), `blend_*` (inverting crosshair blend), `gfx_*` (matrix stack vs JOML 2D matrices),
-`hud_*` (HUD registry vs HUD callback + a small InGameHud mixin), `tick_*`, `stack_overlay*`, `pixel_*`, `textjson_*`.
+`hud_*` (HUD registry vs HUD callback + a small InGameHud mixin), `tick_*`, `stack_overlay*`, `pixel_*`, `useitem_*`, `textjson_*`.
 Java 21 is used for 1.20.5 and newer, Java 17 for 1.20.4 and older.
 
 Not supported: Minecraft 1.19 and older (no `DrawContext`), and the 26.x releases (unobfuscated, Java 25, no Yarn mappings:
