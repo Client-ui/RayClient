@@ -474,7 +474,7 @@ public final class Modules {
 		for (StatusEffectInstance e : mc.player.getStatusEffects()) {
 			if (lines.size() >= max) break;
 			if (e.getEffectType().equals(StatusEffects.NIGHT_VISION) && RayClient.fullbrightActive()) continue;
-			String name = e.getEffectType().value().getName().getString();
+			String name = EffectCompat.name(e);
 			int secs = e.getDuration() / 20;
 			String t = e.isInfinite() ? "inf" : String.format("%d:%02d", secs / 60, secs % 60);
 			lines.add(name + " " + (e.getAmplifier() + 1) + (timer ? " - " + t : ""));

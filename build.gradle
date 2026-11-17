@@ -40,6 +40,7 @@ if (mcAtLeast(21, 0)) {
 }
 compatSets << (mcAtLeast(21, 2) ? 'stack_overlay' : 'stack_overlay_old')
 compatSets << (mcAtLeast(21, 2) ? 'pixel_argb' : 'pixel_abgr')
+compatSets << (mcAtLeast(20, 5) ? 'effect_entry' : 'effect_plain')
 compatSets << (mcAtLeast(21, 2) ? 'useitem_result' : 'useitem_typed')
 compatSets << (mcAtLeast(20, 3) ? 'textjson_codec' : 'textjson_legacy')
 
