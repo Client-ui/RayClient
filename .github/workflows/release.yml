@@ -1,6 +1,8 @@
 name: Release Ray Client
 
-# Publishes a GitHub Release with the mod jar (this is what the in-game updater downloads).
+# Builds Ray Client for every supported Minecraft version and publishes ONE GitHub Release that has a jar for each of them
+# (ray-client-mc<version>-<mod version>.jar). The in-game updater downloads the jar that matches the Minecraft version
+# the player is running. A version that fails to compile is left out of the release (see its job log) instead of blocking the rest.
 # Easiest way to release: Actions -> Release Ray Client -> Run workflow.
 
 on:
@@ -12,9 +14,34 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        mc:
+          - "1.21.11"
+          - "1.21.10"
+          - "1.21.9"
+          - "1.21.8"
+          - "1.21.7"
+          - "1.21.6"
+          - "1.21.5"
+          - "1.21.4"
+          - "1.21.3"
+          - "1.21.2"
+          - "1.21.1"
+          - "1.21"
+          - "1.20.6"
+          - "1.20.5"
+          - "1.20.4"
+          - "1.20.3"
+          - "1.20.2"
+          - "1.20.1"
+          - "1.20"
 
+    name: Build Minecraft ${{ matrix.mc }}
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -30,6 +57,44 @@ jobs:
         with:
           gradle-version: "9.2.1"
 
+      - name: Look up mappings and Fabric API for this version
+        id: deps
+        run: |
+          yarn=$(curl -fsS "https://meta.fabricmc.net/v2/versions/yarn/${{ matrix.mc }}" | jq -r '.[0].version')
+          api=$(curl -fsS -G "https://api.modrinth.com/v2/project/fabric-api/version" \
+            --data-urlencode 'loaders=["fabric"]' \
+            --data-urlencode 'game_versions=["${{ matrix.mc }}"]' | jq -r '.[0].version_number')
+          echo "yarn=$yarn" >> "$GITHUB_OUTPUT"
+          echo "api=$api" >> "$GITHUB_OUTPUT"
+          echo "yarn $yarn, fabric api $api"
+          test "$yarn" != "null" && test "$api" != "null"
+
+      - name: Build
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME_21_X64 }}
+        run: >
+          gradle build --no-daemon
+          -Pminecraft_version=${{ matrix.mc }}
+          -Pyarn_mappings=${{ steps.deps.outputs.yarn }}
+          -Pfabric_version=${{ steps.deps.outputs.api }}
+          -Parchives_base_name=ray-client-mc${{ matrix.mc }}
+
+      - name: Keep the jar for the release step
+        uses: actions/upload-artifact@v4
+        with:
+          name: ray-client-${{ matrix.mc }}
+          path: |
+            build/libs/*.jar
+            !build/libs/*-sources.jar
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
       - name: Read version and check the tag
         run: |
           VER=$(grep '^mod_version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
@@ -39,16 +104,36 @@ jobs:
             exit 1
           fi
 
-      - name: Build Ray Client
-        run: gradle build --no-daemon
+      - name: Collect every jar that was built
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ray-client-*
+          path: out
+          merge-multiple: true
 
-      - name: Prepare release files
+      - name: Write the release notes
         run: |
-          mkdir -p out
-          cp "build/libs/ray-client-${VER}.jar" out/
           ls -la out
-          HASH=$(sha256sum "out/ray-client-${VER}.jar" | cut -d' ' -f1)
-          printf 'Ray Client %s for Minecraft 1.21.11 (Fabric).\n\nsha256: %s\n\n' "$VER" "$HASH" > notes.md
+          COUNT=$(ls out/*.jar | wc -l)
+          test "$COUNT" -gt 0
+          {
+            echo "Ray Client $VER (Fabric). Download the jar that matches your Minecraft version ($COUNT versions):"
+            echo
+            for f in out/*.jar; do
+              n=$(basename "$f")
+              v=$(echo "$n" | sed -E 's/^ray-client-mc(.*)-[0-9][^-]*\.jar$/\1/')
+              echo "- Minecraft $v: $n"
+            done
+            echo
+            echo "Checksums:"
+            echo
+            for f in out/*.jar; do
+              n=$(basename "$f")
+              echo "$n  sha256: $(sha256sum "$f" | cut -d' ' -f1)"
+              echo
+            done
+          } > notes.md
+          cat notes.md
 
       - name: Publish release
         id: rel
@@ -68,11 +153,5 @@ jobs:
         run: |
           echo "## Release published" >> "$GITHUB_STEP_SUMMARY"
           echo "Version ${VER}: ${{ steps.rel.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Jars: $(ls out/*.jar | wc -l) of 19 Minecraft versions" >> "$GITHUB_STEP_SUMMARY"
           echo "All releases: https://github.com/${GITHUB_REPOSITORY}/releases" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Keep a copy of the jar on the run page
-        uses: actions/upload-artifact@v4
-        with:
-          name: ray-client-${{ env.VER }}
-          path: out/*.jar
-          if-no-files-found: error

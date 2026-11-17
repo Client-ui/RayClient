@@ -141,11 +141,11 @@ public final class UpdateDialog {
 		int ph = ready ? 168 + notes.size() * 11 + (notes.isEmpty() ? 0 : 14) : error ? 150 : 138;
 		int px = (vw - pw) / 2, py = (vh - ph) / 2;
 
-		ui.Gfx.push(ctx);
+		Gfx.push(ui.ctx);
 		float s = 0.90f + 0.10f * pop;
-		ui.Gfx.translate(ctx, vw / 2.0f, vh / 2.0f);
-		ui.Gfx.scale(ctx, s, s);
-		ui.Gfx.translate(ctx, -vw / 2.0f, -vh / 2.0f);
+		Gfx.translate(ui.ctx, vw / 2.0f, vh / 2.0f);
+		Gfx.scale(ui.ctx, s, s);
+		Gfx.translate(ui.ctx, -vw / 2.0f, -vh / 2.0f);
 
 		ui.shadow(px, py, pw, ph, 14);
 		ui.glassPanel(px, py, pw, ph, 14, Theme.fade(0xFF26262F, 0.97f * fade), Theme.fade(0xFF0C0C11, 0.97f * fade), 0.36f * fade, 0.09f * fade);
@@ -227,7 +227,7 @@ public final class UpdateDialog {
 			ui.pill(px + 16, by, pw - 32, 24, "Cancel", Theme.BAD, true, UpdateDialog::cancel);
 		}
 
-		ui.Gfx.pop(ctx);
+		Gfx.pop(ui.ctx);
 		ui.modal(false);
 
 		if (escPressed && !closing) cancel();

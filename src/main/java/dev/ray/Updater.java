@@ -121,17 +121,8 @@ public final class Updater {
 		t.start();
 	}
 
-	/** The Minecraft version of the jar that GitHub releases carry (see .github/workflows/release.yml). */
-	private static final String RELEASE_MC = "1.21.11";
-
 	private static void check(boolean manual) {
 		RayConfig cfg = RayConfig.get();
-		// Releases only carry the RELEASE_MC jar. Installing it over a build made for another Minecraft version would break
-		// the game, so builds for other versions are updated by hand (from the Actions artifacts).
-		if (!RELEASE_MC.equals(VersionGuard.SUPPORTED)) {
-			state = State.UP_TO_DATE;
-			return;
-		}
 		try {
 			HttpRequest req = HttpRequest.newBuilder(URI.create("https://api.github.com/repos/" + REPO + "/releases/latest"))
 				.timeout(Duration.ofSeconds(10))
@@ -171,12 +162,12 @@ public final class Updater {
 				names.add(str(o, "name"));
 				assets.add(o);
 			}
-			int idx = UpdateLogic.pickAsset(names);
-			if (idx < 0) throw new java.io.IOException("the release has no jar attached");
+			int idx = UpdateLogic.pickAsset(names, VersionGuard.detected());
+			if (idx < 0) throw new java.io.IOException("the release has no jar for Minecraft " + VersionGuard.detected());
 			JsonObject asset = assets.get(idx);
 			assetUrl = str(asset, "browser_download_url");
 			assetSize = asset.has("size") && !asset.get("size").isJsonNull() ? asset.get("size").getAsLong() : 0L;
-			assetSha = UpdateLogic.shaFromNotes(notes);
+			assetSha = UpdateLogic.shaFromNotes(notes, names.get(idx));
 			if (!UpdateLogic.trustedUrl(assetUrl)) throw new java.io.IOException("the download address is not on GitHub");
 
 			state = State.AVAILABLE;
