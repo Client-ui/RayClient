@@ -761,14 +761,14 @@ public final class Ui {
 	}
 
 	public void scaledHead(String s, int x, int y, float scale, int c) {
-		ctx.getMatrices().pushMatrix();
-		ctx.getMatrices().translate((float) x, (float) y);
-		ctx.getMatrices().scale(scale, scale);
+		Gfx.push(ctx);
+		Gfx.translate(ctx, (float) x, (float) y);
+		Gfx.scale(ctx, scale, scale);
 		float oldScale = ClientFont.scale;
 		ClientFont.scale = oldScale * scale; // pick the font detail for the size it is really drawn at
 		ClientFont.drawHead(ctx, tr, s, 0, 0, c, false);
 		ClientFont.scale = oldScale;
-		ctx.getMatrices().popMatrix();
+		Gfx.pop(ctx);
 	}
 
 	/** Width of text drawn with {@link #spaced} (sp extra pixels between letters). */
@@ -819,14 +819,14 @@ public final class Ui {
 	}
 
 	public void scaledText(String s, int x, int y, float scale, int c, boolean shadow) {
-		ctx.getMatrices().pushMatrix();
-		ctx.getMatrices().translate((float) x, (float) y);
-		ctx.getMatrices().scale(scale, scale);
+		Gfx.push(ctx);
+		Gfx.translate(ctx, (float) x, (float) y);
+		Gfx.scale(ctx, scale, scale);
 		float oldScale = ClientFont.scale;
 		ClientFont.scale = oldScale * scale;
 		ClientFont.draw(ctx, tr, s, 0, 0, c, shadow);
 		ClientFont.scale = oldScale;
-		ctx.getMatrices().popMatrix();
+		Gfx.pop(ctx);
 	}
 
 	/** A small pill label such as NEW. Returns its width. */

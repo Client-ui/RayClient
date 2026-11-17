@@ -4,8 +4,6 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.DeathScreen;
 import net.minecraft.entity.EquipmentSlot;
@@ -80,44 +78,7 @@ public class RayClient implements ClientModInitializer {
 		lyricsToggleKey = KeyBindingHelper.registerKeyBinding(
 			KeyCompat.make("key.ray.lyricstoggle", GLFW.GLFW_KEY_UNKNOWN));
 
-		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.of(MOD_ID, "hud"), (ctx, tc) -> Safe.render("HUD", Hud::render, ctx, tc));
-		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.of(MOD_ID, "lyrics"), (ctx, tc) -> Safe.render("Lyric Sync", LyricsHud::render, ctx, tc));
-		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.of(MOD_ID, "outline"), (ctx, tc) -> Safe.render("Block Outline", BlockOutline::render, ctx, tc));
-		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.of(MOD_ID, "waypoints"), (ctx, tc) -> Safe.render("Waypoints", WaypointMarkers::render, ctx, tc));
-		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.of(MOD_ID, "hitboxes"), (ctx, tc) -> Safe.render("Hitboxes", Hitboxes::render, ctx, tc));
-		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.of(MOD_ID, "toasts"), (ctx, tc) -> Safe.render("Notifications", Toasts::render, ctx, tc));
-		HudElementRegistry.replaceElement(VanillaHudElements.CROSSHAIR, original -> (ctx, tickCounter) -> {
-			RayConfig cfg = RayConfig.get();
-			MinecraftClient mc = MinecraftClient.getInstance();
-			if (cfg.customCrosshair && mc.player != null && mc.options.getPerspective().isFirstPerson()) {
-				Hud.drawCrosshair(ctx, mc);
-			} else {
-				original.render(ctx, tickCounter);
-			}
-		});
-		try {
-			HudElementRegistry.replaceElement(Identifier.of("minecraft", "scoreboard"), original -> (ctx, tickCounter) -> {
-				RayConfig cfg = RayConfig.get();
-				if (cfg.hideScoreboard) return;
-				int sw = ctx.getScaledWindowWidth();
-				int sh = ctx.getScaledWindowHeight();
-				int[] off = Modules.scoreboard.offset(sw, sh);
-				boolean custom = Modules.scoreboard.enabled() && (off[0] != 0 || off[1] != 0 || cfg.scoreboardScale != 100);
-				if (!custom) {
-					original.render(ctx, tickCounter);
-					return;
-				}
-				float s = cfg.scoreboardScale / 100.0f;
-				ctx.getMatrices().pushMatrix();
-				ctx.getMatrices().translate(sw + off[0], sh / 2.0f + off[1]);
-				ctx.getMatrices().scale(s, s);
-				ctx.getMatrices().translate(-sw, -sh / 2.0f);
-				original.render(ctx, tickCounter);
-				ctx.getMatrices().popMatrix();
-			});
-		} catch (Throwable t) {
-			System.err.println("[Ray Client] Could not hook the scoreboard: " + t);
-		}
+		HudCompat.register();
 		ClientTickEvents.END_CLIENT_TICK.register(RayClient::onTick);
 		ClientLifecycleEvents.CLIENT_STOPPING.register(RayClient::stopZoom);
 	}

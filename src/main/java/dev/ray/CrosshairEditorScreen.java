@@ -95,8 +95,8 @@ public class CrosshairEditorScreen extends Screen {
 		int viewW = UiScale.view(width, sc), viewH = UiScale.view(height, sc);
 		int mx = UiScale.mouse(mouseX, sc), my = UiScale.mouse(mouseY, sc);
 		if (client.world != null) ctx.fill(0, 0, width, height, 0x66000000);
-		ctx.getMatrices().pushMatrix();
-		ctx.getMatrices().scale(sc, sc);
+		Gfx.push(ctx);
+		Gfx.scale(ctx, sc, sc);
 		ui.begin(ctx, textRenderer, mx, my);
 
 		int pw = Math.min(420, viewW - 8), ph = 300;
@@ -216,7 +216,7 @@ public class CrosshairEditorScreen extends Screen {
 				if (cellIdx >= 0) setArt(CrosshairArt.set(art(), cellIdx / CrosshairArt.N, cellIdx % CrosshairArt.N, paintMode == 1));
 			}
 		}
-		ctx.getMatrices().popMatrix();
+		Gfx.pop(ctx);
 	}
 
 	@Override

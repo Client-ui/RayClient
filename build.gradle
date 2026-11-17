@@ -9,6 +9,45 @@ base {
 	archivesName = project.archives_base_name
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// Per-version compatibility. Minecraft's internals change between releases, so the few places that differ live in
+// src/compat/<name>; this block picks the right ones for project.minecraft_version. Nothing needs to be passed in
+// by hand: `gradle build -Pminecraft_version=1.20.4 -Pyarn_mappings=... -Pfabric_version=...` is enough.
+// ---------------------------------------------------------------------------------------------------------------
+def mcParts = project.minecraft_version.tokenize('.').collect { it.replaceAll('[^0-9]', '') as int }
+if (mcParts[0] != 1 || mcParts.size() < 2) {
+	throw new GradleException("Minecraft ${project.minecraft_version} is not supported: only 1.x releases that still use Yarn mappings (1.20 to 1.21.11) are.")
+}
+def mcMinor = mcParts[1]
+def mcPatch = mcParts.size() > 2 ? mcParts[2] : 0
+def mcAtLeast = { int minor, int patch -> mcMinor > minor || (mcMinor == minor && mcPatch >= patch) }
+if (!mcAtLeast(20, 0)) {
+	throw new GradleException("Minecraft ${project.minecraft_version} is older than 1.20, which has no DrawContext; Ray Client supports 1.20 and newer.")
+}
+
+def compatSets = []
+compatSets << (mcAtLeast(21, 9) ? 'key_obj' : 'key_str')
+compatSets << (mcAtLeast(21, 7) ? 'blend_invert' : 'blend_plain')
+compatSets << (mcAtLeast(21, 6) ? 'gfx_joml' : 'gfx_stack')
+if (mcAtLeast(21, 6)) {
+	compatSets << 'hud_registry'
+} else {
+	compatSets << 'hud_legacy'
+	compatSets << (mcAtLeast(21, 0) ? 'hud_callback_tc' : 'hud_callback_f')
+}
+if (mcAtLeast(21, 0)) {
+	compatSets << (mcAtLeast(21, 5) ? 'tick_progress' : 'tick_delta')
+}
+compatSets << (mcAtLeast(21, 2) ? 'stack_overlay' : 'stack_overlay_old')
+compatSets << (mcAtLeast(21, 2) ? 'pixel_argb' : 'pixel_abgr')
+compatSets << (mcAtLeast(20, 3) ? 'textjson_codec' : 'textjson_legacy')
+
+// Minecraft 1.20.5 and newer need Java 21; 1.20.4 and older run on Java 17 (and a jar built for 21 would not load there)
+def javaVersion = mcAtLeast(20, 5) ? 21 : 17
+def mixinLevel = "JAVA_${javaVersion}"
+
+logger.lifecycle("Ray Client for Minecraft ${project.minecraft_version}: Java ${javaVersion}, compat ${compatSets}")
+
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
@@ -19,28 +58,33 @@ dependencies {
 processResources {
 	inputs.property "version", project.version
 	inputs.property "minecraft_version", project.minecraft_version
-	inputs.property "java_version", project.java_version
-	filesMatching("fabric.mod.json") {
-		expand "version": inputs.properties.version,
-			"minecraft_version": inputs.properties.minecraft_version,
-			"java_version": inputs.properties.java_version
+	inputs.property "java_version", javaVersion
+	inputs.property "mixin_level", mixinLevel
+	filesMatching(["fabric.mod.json", "ray.mixins.json", "ray.compat.mixins.json"]) {
+		expand "version": project.version,
+			"minecraft_version": project.minecraft_version,
+			"java_version": javaVersion,
+			"mixin_level": mixinLevel
 	}
 }
 
 tasks.withType(JavaCompile).configureEach {
-	options.release = Integer.parseInt(project.java_version)
+	options.release = javaVersion
 }
 
 sourceSets {
 	main {
 		java {
-			srcDir "src/compat_${project.compat}/java"
+			compatSets.each { srcDir "src/compat/${it}/java" }
+		}
+		resources {
+			compatSets.each { srcDir "src/compat/${it}/resources" }
 		}
 	}
 }
 
 java {
 	withSourcesJar()
-	sourceCompatibility = JavaVersion.toVersion(project.java_version)
-	targetCompatibility = JavaVersion.toVersion(project.java_version)
+	sourceCompatibility = JavaVersion.toVersion(javaVersion)
+	targetCompatibility = JavaVersion.toVersion(javaVersion)
 }

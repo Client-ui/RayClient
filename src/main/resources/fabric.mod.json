@@ -10,7 +10,8 @@
   "license": "MIT",
   "environment": "client",
   "mixins": [
-    "ray.mixins.json"
+    "ray.mixins.json",
+    "ray.compat.mixins.json"
   ],
   "entrypoints": {
     "client": [
@@ -18,10 +19,15 @@
     ]
   },
   "depends": {
-    "fabricloader": ">=0.18.0",
+    "fabricloader": ">=0.15.11",
     "minecraft": "${minecraft_version}",
     "java": ">=${java_version}",
     "fabric-api": "*"
   },
-  "icon": "assets/ray/icon.png"
+  "icon": "assets/ray/icon.png",
+  "custom": {
+    "ray": {
+      "minecraft": "${minecraft_version}"
+    }
+  }
 }

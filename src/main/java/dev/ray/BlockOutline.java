@@ -3,7 +3,6 @@ package dev.ray;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -34,7 +33,7 @@ public final class BlockOutline {
 
 	private BlockOutline() {}
 
-	public static void render(DrawContext ctx, RenderTickCounter tickCounter) {
+	public static void render(DrawContext ctx, Tick tickCounter) {
 		RayConfig cfg = RayConfig.get();
 		if (!cfg.blockOutline) return;
 		MinecraftClient mc = MinecraftClient.getInstance();
@@ -49,7 +48,7 @@ public final class BlockOutline {
 		if (shape.isEmpty()) return;
 
 		// ---- camera ----
-		float tp = tickCounter.getTickProgress(false);
+		float tp = tickCounter.progress();
 		Vec3d cam = mc.player.getCameraPosVec(tp);
 		boolean free = FreeLook.active && FreeLook.hooked;
 		double yaw = Math.toRadians(free ? FreeLook.yaw : mc.player.getYaw(tp));
@@ -189,13 +188,13 @@ public final class BlockOutline {
 		float dx = l[2] - l[0], dy = l[3] - l[1];
 		float len = (float) Math.hypot(dx, dy);
 		if (len < 0.01f || len > 20000f) return;
-		ctx.getMatrices().pushMatrix();
-		ctx.getMatrices().translate(l[0], l[1]);
-		ctx.getMatrices().rotate((float) Math.atan2(dy, dx));
-		ctx.getMatrices().scale(1.0f / guiScale, 1.0f / guiScale);
+		Gfx.push(ctx);
+		Gfx.translate(ctx, l[0], l[1]);
+		Gfx.rotate(ctx, (float) Math.atan2(dy, dx));
+		Gfx.scale(ctx, 1.0f / guiScale, 1.0f / guiScale);
 		int length = Math.round(len * guiScale);
 		int half = thickPx / 2;
 		ctx.fill(-half, -half, length + (thickPx - half), thickPx - half, color);
-		ctx.getMatrices().popMatrix();
+		Gfx.pop(ctx);
 	}
 }

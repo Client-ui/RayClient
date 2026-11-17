@@ -2,7 +2,7 @@
   "required": false,
   "minVersion": "0.8",
   "package": "dev.ray.mixin",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "${mixin_level}",
   "mixins": [],
   "client": [
     "LivingEntityMixin",
@@ -15,6 +15,7 @@
     "CameraFreeLookMixin",
     "EntityFreeLookMixin",
     "ScreenBackgroundMixin",
+    "ScreenBackgroundOldMixin",
     "OverlayTextureMixin",
     "FontManagerMixin",
     "FontStoragesMixin",

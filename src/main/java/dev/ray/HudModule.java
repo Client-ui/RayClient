@@ -122,10 +122,10 @@ public abstract class HudModule {
 		float s = scale();
 		boolean scaled = Math.abs(s - 1.0f) > 0.001f;
 		if (scaled) {
-			ctx.getMatrices().pushMatrix();
-			ctx.getMatrices().translate((float) x, (float) y);
-			ctx.getMatrices().scale(s, s);
-			ctx.getMatrices().translate((float) -x, (float) -y);
+			Gfx.push(ctx);
+			Gfx.translate(ctx, (float) x, (float) y);
+			Gfx.scale(ctx, s, s);
+			Gfx.translate(ctx, (float) -x, (float) -y);
 		}
 		draw(ctx, mc, tr);
 		if (style().border) {
@@ -135,7 +135,7 @@ public abstract class HudModule {
 			ctx.fill(x - 1, y, x, y + h, c);
 			ctx.fill(x + w, y, x + w + 1, y + h, c);
 		}
-		if (scaled) ctx.getMatrices().popMatrix();
+		if (scaled) Gfx.pop(ctx);
 	}
 
 	// ---------- position ----------

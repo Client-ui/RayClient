@@ -1,8 +1,7 @@
 package dev.ray.mixin;
 
 import dev.ray.Sky;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.world.ClientWorld;
+import net.minecraft.client.MinecraftClient;
 import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,8 +16,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class FogColorMixin {
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	@Inject(method = "getFogColor", at = @At("RETURN"), cancellable = true, require = 0)
-	private void ray$fog(Camera camera, float tickProgress, ClientWorld world, int viewDistance, float skyDarkness, CallbackInfoReturnable cir) {
-		if (!Sky.active(world)) return;
+	private void ray$fog(CallbackInfoReturnable cir) {
+		// no target arguments on purpose: the method's parameters differ between 1.21.6 and 1.21.11
+		if (!Sky.active(MinecraftClient.getInstance().world)) return;
 		Object v = cir.getReturnValue();
 		if (v instanceof Vector4f f) {
 			float[] c = Sky.fog(f.x, f.y, f.z);

@@ -150,8 +150,8 @@ public class HudEditorScreen extends Screen {
 		String hint = "Drag to move   -   Right-click for settings   -   ESC to close";
 		ClientFont.draw(ctx, textRenderer, hint, (width - ui.w(hint)) / 2, 10 - Math.round((1f - open) * 14f), Theme.fade(0xFFFFFFFF, 0.7f * open), true);
 
-		ctx.getMatrices().pushMatrix();
-		ctx.getMatrices().scale(ts, ts);
+		Gfx.push(ctx);
+		Gfx.scale(ctx, ts, ts);
 		ClientFont.scale = ts;
 		ui.begin(ctx, textRenderer, UiScale.mouse(mouseX, ts), UiScale.mouse(mouseY, ts));
 		{
@@ -171,7 +171,7 @@ public class HudEditorScreen extends Screen {
 		}
 
 		ui.poll();
-		ctx.getMatrices().popMatrix();
+		Gfx.pop(ctx);
 		boolean uiClicked = ui.leftPressed && overToolbar;
 
 		// ---- mouse input (polled) ----

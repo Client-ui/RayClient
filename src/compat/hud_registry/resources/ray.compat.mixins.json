@@ -1,0 +1,11 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "dev.ray.mixin",
+  "compatibilityLevel": "${mixin_level}",
+  "mixins": [],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

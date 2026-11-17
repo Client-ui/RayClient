@@ -2,7 +2,6 @@ package dev.ray;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderTickCounter;
 
 /** Projects world positions onto the screen using the interpolated first-person camera (same maths as BlockOutline). */
 public final class Projection {
@@ -33,11 +32,11 @@ public final class Projection {
 	}
 
 	/** Returns null when there is no first-person camera to project from. */
-	public static Projection create(MinecraftClient mc, DrawContext ctx, RenderTickCounter tickCounter) {
+	public static Projection create(MinecraftClient mc, DrawContext ctx, Tick tickCounter) {
 		if (mc.player == null || mc.world == null) return null;
 		if (!mc.options.getPerspective().isFirstPerson()) return null;
 		RayConfig cfg = RayConfig.get();
-		float tp = tickCounter.getTickProgress(false);
+		float tp = tickCounter.progress();
 		var cam = mc.player.getCameraPosVec(tp);
 		double baseFov = mc.options.getFov().getValue();
 		double fov = baseFov * (ZoomState.hooked && cfg.zoomEnabled ? ZoomState.fovFactor(baseFov, ZoomState.update()) : 1.0);

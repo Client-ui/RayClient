@@ -56,7 +56,7 @@ public class ArmorModule extends HudModule {
 		int yy = y;
 		for (ItemStack st : stacks) {
 			ctx.drawItem(st, x + 1, yy + 1);
-			ctx.drawStackOverlay(tr, st, x + 1, yy + 1);
+			StackCompat.overlay(ctx, tr, st, x + 1, yy + 1);
 			if (showDur && st.isDamageable()) {
 				String d = String.valueOf(st.getMaxDamage() - st.getDamage());
 				drawText(ctx, tr, d, x + 22, yy + 5, textColor());

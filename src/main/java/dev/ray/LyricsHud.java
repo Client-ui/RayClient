@@ -3,7 +3,6 @@ package dev.ray;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Vec3d;
 
@@ -124,7 +123,7 @@ public final class LyricsHud {
 
 	// ---------- entry point ----------
 
-	public static void render(DrawContext ctx, RenderTickCounter tc) {
+	public static void render(DrawContext ctx, Tick tc) {
 		RayConfig cfg = RayConfig.get();
 		if (!cfg.lyricsOn) {
 			if (!WORDS.isEmpty()) clearWorld();
@@ -157,7 +156,7 @@ public final class LyricsHud {
 
 	// ---------- following the song ----------
 
-	private static void update(MinecraftClient mc, RenderTickCounter tc, RayConfig cfg, int idx, long pos, List<Lrc.Line> lines) {
+	private static void update(MinecraftClient mc, Tick tc, RayConfig cfg, int idx, long pos, List<Lrc.Line> lines) {
 		long now = System.currentTimeMillis();
 		if (lines != lastLines) {
 			lastLines = lines;
@@ -218,8 +217,8 @@ public final class LyricsHud {
 		return !WORDS.isEmpty() && now < groupEnd;
 	}
 
-	private static void spawnWord(MinecraftClient mc, RenderTickCounter tc, RayConfig cfg, int k, long now) {
-		float tp = tc.getTickProgress(false);
+	private static void spawnWord(MinecraftClient mc, Tick tc, RayConfig cfg, int k, long now) {
+		float tp = tc.progress();
 		Vec3d cam = mc.player.getCameraPosVec(tp);
 		double yaw = Math.toRadians(FreeLook.active && FreeLook.hooked ? FreeLook.yaw : mc.player.getYaw(tp));
 		double pit = Math.toRadians(FreeLook.active && FreeLook.hooked ? FreeLook.pitch : mc.player.getPitch(tp));
@@ -340,7 +339,7 @@ public final class LyricsHud {
 		}
 	}
 
-	private static void drawWords(DrawContext ctx, MinecraftClient mc, RenderTickCounter tc, RayConfig cfg) {
+	private static void drawWords(DrawContext ctx, MinecraftClient mc, Tick tc, RayConfig cfg) {
 		if (WORDS.isEmpty()) return;
 		long now = System.currentTimeMillis();
 		Iterator<Word> it = WORDS.iterator();
@@ -350,7 +349,7 @@ public final class LyricsHud {
 		Projection proj = Projection.create(mc, ctx, tc);
 		if (proj == null) return;
 
-		float tp = tc.getTickProgress(false);
+		float tp = tc.progress();
 		double yaw = Math.toRadians(FreeLook.active && FreeLook.hooked ? FreeLook.yaw : mc.player.getYaw(tp));
 		double crx = -Math.cos(yaw), crz = -Math.sin(yaw); // camera right, used to measure how big a block looks
 		double bpp = bpp(cfg);
@@ -388,10 +387,10 @@ public final class LyricsHud {
 			int base = wordColor(cfg, w, now);
 			int col = Theme.mix(base, 0xFFFFFFFF, flash * 0.85f);
 			int x0 = -w.w / 2, y0 = -4;
-			ctx.getMatrices().pushMatrix();
-			ctx.getMatrices().translate(a0[0], a0[1]);
-			ctx.getMatrices().scale(scale, scale);
-			ctx.getMatrices().translate(0f, rise);
+			Gfx.push(ctx);
+			Gfx.translate(ctx, a0[0], a0[1]);
+			Gfx.scale(ctx, scale, scale);
+			Gfx.translate(ctx, 0f, rise);
 			switch (cfg.lyricsWordStyle) {
 				case 1 -> { // outline
 					int o = Theme.fade(0xFF000000, 0.85f * alpha);
@@ -409,7 +408,7 @@ public final class LyricsHud {
 				}
 			}
 			ClientFont.drawSmooth(ctx, tr, w.text, x0, y0, Theme.fade(col, alpha), false);
-			ctx.getMatrices().popMatrix();
+			Gfx.pop(ctx);
 		}
 	}
 
@@ -528,9 +527,9 @@ public final class LyricsHud {
 
 		boolean scaled = Math.abs(sc - 1f) > 0.01f;
 		if (scaled) {
-			ctx.getMatrices().pushMatrix();
-			ctx.getMatrices().translate((float) cx, (float) top);
-			ctx.getMatrices().scale(sc, sc);
+			Gfx.push(ctx);
+			Gfx.translate(ctx, (float) cx, (float) top);
+			Gfx.scale(ctx, sc, sc);
 			cx = 0;
 			top = 0;
 		}
@@ -614,7 +613,7 @@ public final class LyricsHud {
 			if (!time.isEmpty()) drawScaled(ctx, tr, time, ix + Math.round(ClientFont.widthSmooth(tr, info) * is), y2 + 1, is, Theme.fade(Theme.MUTE, 0.9f * A));
 		}
 
-		if (scaled) ctx.getMatrices().popMatrix();
+		if (scaled) Gfx.pop(ctx);
 		return totalH;
 	}
 
@@ -662,10 +661,10 @@ public final class LyricsHud {
 			ClientFont.drawSmooth(ctx, tr, text, x, y, color, false);
 			return;
 		}
-		ctx.getMatrices().pushMatrix();
-		ctx.getMatrices().translate((float) x, (float) y);
-		ctx.getMatrices().scale(s, s);
+		Gfx.push(ctx);
+		Gfx.translate(ctx, (float) x, (float) y);
+		Gfx.scale(ctx, s, s);
 		ClientFont.drawSmooth(ctx, tr, text, 0, 0, color, false);
-		ctx.getMatrices().popMatrix();
+		Gfx.pop(ctx);
 	}
 }

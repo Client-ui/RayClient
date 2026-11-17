@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(Screen.class)
 public class ScreenBackgroundMixin {
-	@Inject(method = "renderBackground", at = @At("HEAD"), cancellable = true, require = 0)
+	@Inject(method = "renderBackground(Lnet/minecraft/client/gui/DrawContext;IIF)V", at = @At("HEAD"), cancellable = true, require = 0)
 	private void ray$menuBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
 		if (MinecraftClient.getInstance().world != null || !RayConfig.get().customBackground) return;
 		Screen self = (Screen) (Object) this;

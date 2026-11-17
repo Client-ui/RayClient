@@ -1,7 +1,6 @@
 package dev.ray;
 
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderTickCounter;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,7 +22,7 @@ public final class Safe {
 	private Safe() {}
 
 	/** Runs a HUD element's render with protection. */
-	public static void render(String name, BiConsumer<DrawContext, RenderTickCounter> element, DrawContext ctx, RenderTickCounter tc) {
+	public static void render(String name, BiConsumer<DrawContext, Tick> element, DrawContext ctx, Tick tc) {
 		State st = STATES.computeIfAbsent(name, k -> new State());
 		long now = System.currentTimeMillis();
 		if (now < st.mutedUntil) return;

@@ -10,16 +10,17 @@ import net.minecraft.item.Items;
 import net.minecraft.text.Text;
 
 /**
- * Ray Client's main menu, laid out like the Ray Launcher's home screen:
+ * Ray Client's main menu, built around one menu column on the left:
  *
- *   left     the logo, a big "Ray Client" wordmark, and the two things you came to do: Singleplayer and Multiplayer
- *   right    slow orange silk ribbons (the launcher's signature), shifting a little with the mouse
- *   bottom   a row of cards for the rest: Mods, Profiles, Options, Quit
+ *   column   the greeting and a big "Ray Client" wordmark, then a glass panel with the two main actions
+ *            (Singleplayer, Multiplayer) and a row of four icon tiles (Mods, Profiles, Options, Quit)
+ *   right    slow orange silk ribbons that start at the panel's edge and fan out, shifting a little with the mouse,
+ *            with a small status card (Minecraft version, modules on) at the bottom right
  *
  * It replaces the vanilla title screen (see MinecraftClientMixin) and can be switched off in the Client category.
  */
 public class RayTitleScreen extends Screen {
-	private static final String MC_VERSION = "1.21.11";
+	private static final String MC_VERSION = VersionGuard.detected();
 
 	private final Ui ui = new Ui();
 	private final long born = System.currentTimeMillis();
@@ -58,8 +59,7 @@ public class RayTitleScreen extends Screen {
 	 * Silk ribbons like the launcher's: they gather on the left, fan out to the right, and the middle ones are thick and
 	 * bright. Each is a sine path drawn as short dashes (about 1100 fills in all).
 	 */
-	private void ribbons(DrawContext ctx, int w, int h, float t, float shift, float alpha) {
-		int x0 = Math.round(w * 0.30f);
+	private void ribbons(DrawContext ctx, int x0, int w, int h, float t, float shift, float alpha) {
 		final int count = 12;
 		for (int r = 0; r < count; r++) {
 			float f = r / (float) (count - 1); // 0..1 across the bundle
@@ -79,21 +79,18 @@ public class RayTitleScreen extends Screen {
 		}
 	}
 
-	/** One quick-action card along the bottom. */
-	private void card(int x, int y, int w, int h, String title, String sub, ItemStack icon, int index, Runnable action) {
-		float ap = ui.appear("card" + title, 420 + index * 90);
+	/** One small icon tile in the row under the two main buttons. */
+	private void tile(int x, int y, int w, int h, String title, ItemStack icon, int index, Runnable action) {
+		float ap = ui.appear("tile" + title, 380 + index * 80);
 		if (ap < 0.02f) return;
-		y += Math.round((1f - ap) * 14f);
+		y += Math.round((1f - ap) * 10f);
 		boolean hov = ui.over(x, y, w, h);
-		float hv = ui.anim("tc" + title, hov);
-		ui.rrect(x, y, w, h, 9, Theme.fade(Theme.mix(Theme.CARD, Theme.CARD_HOVER, hv), ap));
-		ui.ring(x, y, w, h, 9, Theme.fade(Theme.mix(Theme.LINE, Theme.accent(), hv), ap));
-		ui.rrect(x + 10, y + 12, 30, 30, 8, Theme.fade(0xFF1C1A21, ap));
-		if (ap > 0.5f) ui.ctx.drawItem(icon, x + 10 + 7, y + 12 + 7);
-		int tx = x + 10 + 30 + 9;
-		ui.headText(ui.fit(title, w - (tx - x) - 8), tx, y + 14, Theme.fade(0xFFFFFFFF, ap));
-		ui.text(ui.fit(sub, w - (tx - x) - 8), tx, y + 28, Theme.fade(Theme.MUTE, ap));
-		ui.hit("tcard" + title, x, y, w, h, action, null, null);
+		float hv = ui.anim("tt" + title, hov);
+		ui.rrect(x, y, w, h, 8, Theme.fade(Theme.mix(Theme.CARD, Theme.CARD_HOVER, hv), ap));
+		ui.ring(x, y, w, h, 8, Theme.fade(Theme.mix(Theme.LINE, Theme.accent(), hv), ap));
+		if (ap > 0.5f) ui.ctx.drawItem(icon, x + (w - 16) / 2, y + 6 - Math.round(hv * 2f));
+		ui.center(ui.fit(title, w - 4), x + w / 2, y + h - 14, Theme.fade(Theme.mix(Theme.MUTE, 0xFFFFFFFF, hv), ap));
+		ui.hit("ttile" + title, x, y, w, h, action, null, null);
 	}
 
 	@Override
@@ -110,8 +107,8 @@ public class RayTitleScreen extends Screen {
 		float sc = UiScale.fit(width, height, 560, 315, cfg.menuScale);
 		ClientFont.scale = sc;
 		int vw = UiScale.view(width, sc), vh = UiScale.view(height, sc);
-		ctx.getMatrices().pushMatrix();
-		ctx.getMatrices().scale(sc, sc);
+		Gfx.push(ctx);
+		Gfx.scale(ctx, sc, sc);
 		ui.begin(ctx, textRenderer, UiScale.mouse(mouseX, sc), UiScale.mouse(mouseY, sc));
 
 		int m = Math.max(16, Math.min(30, vw / 20));
@@ -119,24 +116,29 @@ public class RayTitleScreen extends Screen {
 		float intro = Theme.easeOutCubic(Math.min(1f, (now - born) / 900f));
 		float heroAp = Theme.easeOutCubic(Math.min(1f, (now - born) / 700f));
 
-		// the silk, behind everything
-		glow(ctx, Math.round(vw * 0.70f + px * 10f), Math.round(vh * 0.46f), Math.round(vw * 0.46f), Math.round(vh * 0.42f), Theme.accent(), 0.30f * intro);
-		ribbons(ctx, vw, vh, t, px * 40f, intro);
+		// menu column geometry
+		int pw = Math.max(190, Math.min(250, Math.round(vw * 0.42f)));
+		int colX = m + 2;
+		int heroH = 54, panelH = 34 + 6 + 34 + 8 + 46;
+		int top = Math.max(m + 36, (vh - (heroH + 22 + panelH)) / 2 + 6);
+
+		// the silk, behind everything: it starts at the panel's edge
+		int silkX = colX + pw + 14;
+		glow(ctx, Math.round((silkX + vw) / 2f + px * 10f), Math.round(vh * 0.46f), Math.round((vw - silkX) * 0.62f), Math.round(vh * 0.42f), Theme.accent(), 0.30f * intro);
+		ribbons(ctx, silkX, vw, vh, t, px * 40f, intro);
 
 		// brand, top left
 		int lh = 20;
 		Logo.draw(ctx, m, m - 2, lh, heroAp);
 		ui.trackedHead("RAY CLIENT", m + Logo.width(lh) + 9, m + 4, Theme.fade(0xFFFFFFFF, heroAp), 2);
 
-		// hero
-		int hx = m + 2;
-		int heroY = Math.round(vh * 0.30f);
+		// hero: greeting, wordmark, one quiet line
 		int hour = java.time.LocalTime.now().getHour();
 		String part = hour < 5 ? "Good night" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 		String user = client.getSession() != null ? client.getSession().getUsername() : "";
-		ui.text(user.isEmpty() ? part : part + ", " + user, hx, heroY, Theme.fade(Theme.DIM, heroAp));
+		ui.text(user.isEmpty() ? part : part + ", " + user, colX, top, Theme.fade(Theme.DIM, heroAp));
 		int slide = Math.round((1f - heroAp) * 16f);
-		ui.scaledHead("Ray Client", hx - slide, heroY + 16, 3.0f, Theme.fade(0xFFFFFFFF, heroAp));
+		ui.scaledHead("Ray Client", colX - slide, top + 16, 3.0f, Theme.fade(0xFFFFFFFF, heroAp));
 
 		if (now - statAt > 1000L) { // counting builds the module list, so do it once a second, not every frame
 			statAt = now;
@@ -144,28 +146,42 @@ public class RayTitleScreen extends Screen {
 			for (Features.Card c : Features.cards()) if (c.on.getAsBoolean()) on++;
 			modsOn = on;
 		}
-		ui.text("Minecraft " + MC_VERSION + "  -  Fabric  -  " + modsOn + (modsOn == 1 ? " module on" : " modules on"), hx, heroY + 16 + 38, Theme.fade(Theme.MUTE, heroAp));
+		ui.text("Minecraft " + MC_VERSION + "  -  Fabric", colX, top + 16 + 38, Theme.fade(Theme.MUTE, heroAp));
 
-		float bAp = ui.appear("herobtn", 260);
-		int by = heroY + 16 + 38 + 20 + Math.round((1f - bAp) * 10f);
-		if (bAp > 0.02f) {
-			ui.primary(hx, by, 130, 30, "Singleplayer", () -> client.setScreen(new SelectWorldScreen(this)));
-			ui.pill(hx + 138, by, 114, 30, "Multiplayer", Theme.accent(), true, () -> client.setScreen(new MultiplayerScreen(this)));
+		// the glass panel with the menu
+		float pAp = ui.appear("panel", 200);
+		int py0 = top + heroH + 22 + Math.round((1f - pAp) * 12f);
+		if (pAp > 0.02f) {
+			ui.rrect(colX - 10, py0 - 10, pw + 20, panelH + 20, 12, Theme.fade(Theme.CARD, 0.60f * pAp));
+			ui.ring(colX - 10, py0 - 10, pw + 20, panelH + 20, 12, Theme.fade(Theme.LINE, pAp));
+			ui.primary(colX, py0, pw, 34, "Singleplayer", () -> client.setScreen(new SelectWorldScreen(this)));
+			ui.pill(colX, py0 + 40, pw, 34, "Multiplayer", Theme.accent(), true, () -> client.setScreen(new MultiplayerScreen(this)));
 		}
-
-		// the rest, as cards along the bottom
-		int cy = vh - 30 - 54;
-		int cw = (vw - 2 * m - 3 * 10) / 4;
-		card(m, cy, cw, 54, "Mods", modsOn + " on", new ItemStack(Items.NETHER_STAR), 0, () -> {
+		int ty0 = py0 + 82;
+		int tw = (pw - 3 * 6) / 4;
+		tile(colX, ty0, tw, 46, "Mods", new ItemStack(Items.NETHER_STAR), 0, () -> {
 			RayScreen.selectPage("MODS");
 			client.setScreen(new RayScreen(this));
 		});
-		card(m + (cw + 10), cy, cw, 54, "Profiles", "Switch your setup", new ItemStack(Items.CHEST), 1, () -> {
+		tile(colX + (tw + 6), ty0, tw, 46, "Profiles", new ItemStack(Items.CHEST), 1, () -> {
 			RayScreen.selectPage("PROFILES");
 			client.setScreen(new RayScreen(this));
 		});
-		card(m + 2 * (cw + 10), cy, cw, 54, "Options", "Video, sound, controls", new ItemStack(Items.COMPARATOR), 2, () -> client.setScreen(new OptionsScreen(this, client.options)));
-		card(m + 3 * (cw + 10), cy, cw, 54, "Quit", "Close the game", new ItemStack(Items.BARRIER), 3, () -> client.scheduleStop());
+		tile(colX + 2 * (tw + 6), ty0, tw, 46, "Options", new ItemStack(Items.COMPARATOR), 2, () -> client.setScreen(new OptionsScreen(this, client.options)));
+		tile(colX + 3 * (tw + 6), ty0, tw, 46, "Quit", new ItemStack(Items.BARRIER), 3, () -> client.scheduleStop());
+
+		// status card, bottom right
+		float sAp = ui.appear("status", 600);
+		if (sAp > 0.02f) {
+			String l1 = "Minecraft " + MC_VERSION, l2 = modsOn + (modsOn == 1 ? " module on" : " modules on");
+			int sw2 = Math.max(ui.w(l1), ui.w(l2)) + 36, sh2 = 38;
+			int sx = vw - m - sw2, sy = vh - 30 - sh2 + Math.round((1f - sAp) * 10f);
+			ui.rrect(sx, sy, sw2, sh2, 9, Theme.fade(Theme.CARD, 0.85f * sAp));
+			ui.ring(sx, sy, sw2, sh2, 9, Theme.fade(Theme.LINE, sAp));
+			ui.rrect(sx + 12, sy + 15, 8, 8, 4, Theme.fade(Theme.accent(), sAp));
+			ui.text(l1, sx + 28, sy + 8, Theme.fade(0xFFFFFFFF, sAp));
+			ui.text(l2, sx + 28, sy + 21, Theme.fade(Theme.MUTE, sAp));
+		}
 
 		// update news: one quiet line at the top, and the check link at the bottom left
 		Updater.State us = Updater.state;
@@ -230,6 +246,6 @@ public class RayTitleScreen extends Screen {
 
 		UpdateDialog.render(ui, vw, vh);
 		ui.poll();
-		ctx.getMatrices().popMatrix();
+		Gfx.pop(ctx);
 	}
 }

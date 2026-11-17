@@ -30,7 +30,7 @@ public class OverlayTextureMixin implements OverlayRecolor {
 		if (image == null) return;
 		// the top 8 rows of the 16x16 texture are the hurt flash; the bottom rows are the white "creeper flash"
 		for (int y = 0; y < 8; y++) {
-			for (int x = 0; x < 16; x++) image.setColorArgb(x, y, argb);
+			for (int x = 0; x < 16; x++) dev.ray.PixelCompat.set(image, x, y, argb);
 		}
 		texture.upload();
 	}

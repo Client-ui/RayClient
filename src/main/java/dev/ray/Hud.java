@@ -3,7 +3,6 @@ package dev.ray;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -12,7 +11,7 @@ import net.minecraft.util.hit.EntityHitResult;
 public final class Hud {
 	private Hud() {}
 
-	public static void render(DrawContext ctx, RenderTickCounter tickCounter) {
+	public static void render(DrawContext ctx, Tick tickCounter) {
 		ClientFont.scale = 1f; // the HUD is drawn in plain GUI units
 		MinecraftClient mc = MinecraftClient.getInstance();
 		RayConfig cfg = RayConfig.get();
@@ -85,12 +84,12 @@ public final class Hud {
 			return;
 		}
 		float cx = ctx.getScaledWindowWidth() / 2.0f, cy = ctx.getScaledWindowHeight() / 2.0f;
-		ctx.getMatrices().pushMatrix();
-		ctx.getMatrices().translate(cx, cy);
-		ctx.getMatrices().scale(z, z);
-		ctx.getMatrices().translate(-cx, -cy);
+		Gfx.push(ctx);
+		Gfx.translate(ctx, cx, cy);
+		Gfx.scale(ctx, z, z);
+		Gfx.translate(ctx, -cx, -cy);
 		drawCrosshairInner(ctx, mc);
-		ctx.getMatrices().popMatrix();
+		Gfx.pop(ctx);
 	}
 
 	private static void drawCrosshairInner(DrawContext ctx, MinecraftClient mc) {

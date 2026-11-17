@@ -10,13 +10,13 @@ public final class ScreenLines {
 		float dx = x2 - x1, dy = y2 - y1;
 		float len = (float) Math.hypot(dx, dy);
 		if (len < 0.01f || len > 20000f) return;
-		ctx.getMatrices().pushMatrix();
-		ctx.getMatrices().translate(x1, y1);
-		ctx.getMatrices().rotate((float) Math.atan2(dy, dx));
-		ctx.getMatrices().scale(1.0f / guiScale, 1.0f / guiScale);
+		Gfx.push(ctx);
+		Gfx.translate(ctx, x1, y1);
+		Gfx.rotate(ctx, (float) Math.atan2(dy, dx));
+		Gfx.scale(ctx, 1.0f / guiScale, 1.0f / guiScale);
 		int length = Math.round(len * guiScale);
 		int half = thickPx / 2;
 		ctx.fill(-half, -half, length + (thickPx - half), thickPx - half, color);
-		ctx.getMatrices().popMatrix();
+		Gfx.pop(ctx);
 	}
 }

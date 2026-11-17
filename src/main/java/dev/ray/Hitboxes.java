@@ -2,7 +2,6 @@ package dev.ray;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -29,7 +28,7 @@ public final class Hitboxes {
 
 	private Hitboxes() {}
 
-	public static void render(DrawContext ctx, RenderTickCounter tickCounter) {
+	public static void render(DrawContext ctx, Tick tickCounter) {
 		RayConfig cfg = RayConfig.get();
 		if (!cfg.hitbox) return;
 		MinecraftClient mc = MinecraftClient.getInstance();
@@ -38,7 +37,7 @@ public final class Hitboxes {
 		if (proj == null) return;
 
 		Entity hovered = mc.crosshairTarget instanceof EntityHitResult ehr ? ehr.getEntity() : null;
-		float tp = tickCounter.getTickProgress(false);
+		float tp = tickCounter.progress();
 		float gs = (float) mc.getWindow().getScaleFactor();
 		int thick = Math.max(1, Math.round(cfg.hitboxThickness * gs / 2.0f));
 		int alpha = Math.max(20, Math.min(100, cfg.hitboxOpacity)) * 255 / 100;

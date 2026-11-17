@@ -30,7 +30,7 @@ public class InventoryModule extends HudModule {
 				ItemStack s = mc.player.getInventory().getStack(9 + r * 9 + c);
 				if (s.isEmpty()) continue;
 				ctx.drawItem(s, ix, iy);
-				ctx.drawStackOverlay(tr, s, ix, iy);
+				StackCompat.overlay(ctx, tr, s, ix, iy);
 			}
 		}
 	}

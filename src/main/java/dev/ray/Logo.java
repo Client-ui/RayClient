@@ -147,9 +147,9 @@ public final class Logo {
 		// mapping is what made it look soft)
 		int f = Math.max(1, Math.min(6, Math.round(FontOverride.real())));
 		Baked b = bake(h * f);
-		ctx.getMatrices().pushMatrix();
-		ctx.getMatrices().translate((float) x, (float) y);
-		ctx.getMatrices().scale(1f / f, 1f / f);
+		Gfx.push(ctx);
+		Gfx.translate(ctx, (float) x, (float) y);
+		Gfx.scale(ctx, 1f / f, 1f / f);
 		for (int si = 0; si < SHAPES.length; si++) {
 			Shape sh = SHAPES[si];
 			int[] r = b.runs[si];
@@ -161,7 +161,7 @@ public final class Logo {
 				ctx.fill(r[i + 1], r[i], r[i + 2], r[i] + 1, (a << 24) | (c & 0xFFFFFF));
 			}
 		}
-		ctx.getMatrices().popMatrix();
+		Gfx.pop(ctx);
 	}
 
 	/** Same, centred on cx. */

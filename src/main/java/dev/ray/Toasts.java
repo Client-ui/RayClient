@@ -2,7 +2,6 @@ package dev.ray;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderTickCounter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,7 +40,7 @@ public final class Toasts {
 		return accent;
 	}
 
-	public static void render(DrawContext ctx, RenderTickCounter tickCounter) {
+	public static void render(DrawContext ctx, Tick tickCounter) {
 		if (LIST.isEmpty()) return;
 		long now = System.currentTimeMillis();
 		LIST.removeIf(t -> now - t.born() > LIFE);

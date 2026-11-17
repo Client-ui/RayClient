@@ -1,12 +1,10 @@
 package dev.ray;
 
 import com.google.gson.JsonObject;
-import com.mojang.serialization.JsonOps;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextCodecs;
 import net.minecraft.util.Identifier;
 
 import java.util.HashMap;
@@ -78,7 +76,7 @@ public final class ClientFont {
 				f.addProperty("id", id.toString());
 				json.add("font", f);
 			}
-			return TextCodecs.CODEC.parse(JsonOps.INSTANCE, json).result().orElse(null);
+			return TextJson.parse(json);
 		} catch (Throwable e) {
 			return null;
 		}
@@ -122,11 +120,11 @@ public final class ClientFont {
 			// is what makes every stem the same width and every letter evenly spaced.
 			float real = Math.max(0.5f, FontOverride.real());
 			int dy = Math.round(7.6f * real) - 7; // Minecraft puts the baseline 7 units down; we want it 7.6 units down
-			ctx.getMatrices().pushMatrix();
-			ctx.getMatrices().translate((float) x, (float) y);
-			ctx.getMatrices().scale(1f / real, 1f / real);
+			Gfx.push(ctx);
+			Gfx.translate(ctx, (float) x, (float) y);
+			Gfx.scale(ctx, 1f / real, 1f / real);
 			ctx.drawText(tr, t, 0, dy, color, shadow);
-			ctx.getMatrices().popMatrix();
+			Gfx.pop(ctx);
 			return;
 		}
 		ctx.drawText(tr, t, x, y, color, shadow);
@@ -167,15 +165,15 @@ public final class ClientFont {
 			float real = Math.max(0.5f, FontOverride.real());
 			int dy = Math.round(7.6f * real) - 7;
 			int r = Math.max(1, Math.round(real / 3f));
-			ctx.getMatrices().pushMatrix();
-			ctx.getMatrices().translate((float) x, (float) y);
-			ctx.getMatrices().scale(1f / real, 1f / real);
+			Gfx.push(ctx);
+			Gfx.translate(ctx, (float) x, (float) y);
+			Gfx.scale(ctx, 1f / real, 1f / real);
 			ctx.drawText(tr, t, -r, dy, oc, false);
 			ctx.drawText(tr, t, r, dy, oc, false);
 			ctx.drawText(tr, t, 0, dy - r, oc, false);
 			ctx.drawText(tr, t, 0, dy + r, oc, false);
 			ctx.drawText(tr, t, 0, dy, color, false);
-			ctx.getMatrices().popMatrix();
+			Gfx.pop(ctx);
 			return;
 		}
 		draw(ctx, tr, s, x - 1, y, oc, false);

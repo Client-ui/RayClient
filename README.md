@@ -1,6 +1,29 @@
 # Ray Client
 
-A client-side Fabric quality-of-life and visual customization mod for Minecraft 1.21.11.
+A client-side Fabric quality-of-life and visual customization mod for Minecraft 1.20 to 1.21.11.
+
+## Supported Minecraft versions
+
+1.21.11, 1.21.10, 1.21.9, 1.21.8, 1.21.7, 1.21.6, 1.21.5, 1.21.4, 1.21.3, 1.21.2, 1.21.1, 1.21,
+1.20.6, 1.20.5, 1.20.4, 1.20.3, 1.20.2, 1.20.1 and 1.20 (Fabric, Yarn mappings).
+
+Each version gets its own jar. **Actions -> Build all Ray Client versions** builds all of them; every jar is its own artifact
+(`ray-client-<version>`). A version that fails to compile fails alone, and its job log shows the compiler errors.
+
+`build.gradle` picks the right per-version code from the Minecraft version (nothing to pass in by hand):
+
+    gradle build -Pminecraft_version=1.20.4 -Pyarn_mappings=1.20.4+build.3 -Pfabric_version=0.97.3+1.20.4
+
+The few places where Minecraft's own code differs live in `src/compat/<name>/`:
+`key_*` (key binding categories), `blend_*` (inverting crosshair blend), `gfx_*` (matrix stack vs JOML 2D matrices),
+`hud_*` (HUD registry vs HUD callback + a small InGameHud mixin), `tick_*`, `stack_overlay*`, `pixel_*`, `textjson_*`.
+Java 21 is used for 1.20.5 and newer, Java 17 for 1.20.4 and older.
+
+Not supported: Minecraft 1.19 and older (no `DrawContext`), and the 26.x releases (unobfuscated, Java 25, no Yarn mappings:
+they need a separate port to Mojang's names).
+
+Features that depend on a version-specific internal (Custom Sky's sky disc, Low Fire, Better Font's font override) skip
+themselves quietly on versions where that internal does not match; the rest of the client is unaffected.
 
 ## What is new: the redesign
 

@@ -120,7 +120,12 @@ public class RayScreen extends Screen {
 		return !UpdateDialog.isOpen();
 	}
 
-	@Override
+	/** Minecraft 1.20 and 1.20.1 call this three-argument version instead. */
+	public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+		return mouseScrolled(mouseX, mouseY, 0.0, amount);
+	}
+
+	// no @Override: the four-argument form only exists from Minecraft 1.20.2 on
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
 		if (UpdateDialog.isOpen()) return true;
 		int mxv = UiScale.mouse((int) mouseX, lastSc), myv = UiScale.mouse((int) mouseY, lastSc);
@@ -176,8 +181,8 @@ public class RayScreen extends Screen {
 		viewW = UiScale.view(width, sc);
 		viewH = UiScale.view(height, sc);
 		int mx = UiScale.mouse(mouseX, sc), my = UiScale.mouse(mouseY, sc);
-		ctx.getMatrices().pushMatrix();
-		ctx.getMatrices().scale(sc, sc);
+		Gfx.push(ctx);
+		Gfx.scale(ctx, sc, sc);
 		ui.begin(ctx, textRenderer, mx, my);
 		hovCard = null;
 
@@ -214,7 +219,7 @@ public class RayScreen extends Screen {
 			if (inside && !UpdateDialog.isOpen()) setFocused(search);
 			else setFocused(null);
 		}
-		ctx.getMatrices().popMatrix();
+		Gfx.pop(ctx);
 	}
 
 	private void drawHeader(int px, int py, int pw) {

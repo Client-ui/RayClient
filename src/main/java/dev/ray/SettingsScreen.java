@@ -65,7 +65,12 @@ public abstract class SettingsScreen extends Screen {
 		return !UpdateDialog.isOpen();
 	}
 
-	@Override
+	/** Minecraft 1.20 and 1.20.1 call this three-argument version instead. */
+	public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+		return mouseScrolled(mouseX, mouseY, 0.0, amount);
+	}
+
+	// no @Override: the four-argument form only exists from Minecraft 1.20.2 on
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
 		if (UpdateDialog.isOpen()) return true;
 		scrollTarget = Math.max(0, Math.min(scrollMax, scrollTarget - (int) (verticalAmount * 28)));
@@ -86,8 +91,8 @@ public abstract class SettingsScreen extends Screen {
 		float t = cfg.uiAnimations ? Math.min(1f, (now - openedAt) / 220f) : 1f;
 		float open = Theme.easeOutCubic(t);
 		if (client.world != null) ctx.fill(0, 0, width, height, Theme.fade(0xFF000000, 0.40f * open));
-		ctx.getMatrices().pushMatrix();
-		ctx.getMatrices().scale(sc, sc);
+		Gfx.push(ctx);
+		Gfx.scale(ctx, sc, sc);
 		ui.begin(ctx, textRenderer, mx, my);
 		int accent = Theme.accent();
 
@@ -140,7 +145,7 @@ public abstract class SettingsScreen extends Screen {
 			}
 			setFocused(hit == null ? null : hit.widget());
 		}
-		ctx.getMatrices().popMatrix();
+		Gfx.pop(ctx);
 	}
 
 	@Override

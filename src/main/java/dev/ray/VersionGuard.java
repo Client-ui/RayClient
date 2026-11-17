@@ -8,9 +8,21 @@ import net.fabricmc.loader.api.FabricLoader;
  * this is a second guard inside the client with a clear explanation, in case that check is bypassed.
  */
 public final class VersionGuard {
-	public static final String SUPPORTED = "1.21.11";
+	/** The Minecraft version this jar was built for (written into fabric.mod.json by the build). */
+	public static final String SUPPORTED = builtFor();
 
 	private VersionGuard() {}
+
+	private static String builtFor() {
+		try {
+			return FabricLoader.getInstance().getModContainer("ray")
+				.map(c -> c.getMetadata().getCustomValue("ray"))
+				.map(v -> v.getAsObject().get("minecraft").getAsString())
+				.orElse("unknown");
+		} catch (RuntimeException e) {
+			return "unknown";
+		}
+	}
 
 	public static String detected() {
 		return FabricLoader.getInstance().getModContainer("minecraft")
@@ -23,7 +35,7 @@ public final class VersionGuard {
 	}
 
 	static boolean isSupported(String v) {
-		return v.equals(SUPPORTED) || v.startsWith(SUPPORTED + ".");
+		return v.equals(SUPPORTED) || SUPPORTED.equals("unknown");
 	}
 
 	/** Throws with a clear message if this is not the Minecraft version the client was built for. */

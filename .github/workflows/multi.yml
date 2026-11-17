@@ -1,7 +1,8 @@
 name: Build all Ray Client versions
 
-# Builds the client once per Minecraft version listed in the matrix and uploads every jar as its own
-# artifact (Actions -> the run -> Artifacts). A version that does not compile yet fails alone and
+# Builds the client once per Minecraft version listed in the matrix (1.20 to 1.21.11) and uploads every jar as its own
+# artifact (Actions -> the run -> Artifacts). build.gradle picks the right per-version compatibility code (src/compat)
+# and Java version from the Minecraft version, so nothing else is passed in here. A version that does not compile yet fails alone and
 # the others still build; open that job's log to see the compiler errors.
 
 on:
@@ -19,17 +20,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { mc: "1.21.11", java: "21", compat: "new" }
-          - { mc: "1.21.10", java: "21", compat: "new" }
-          - { mc: "1.21.9", java: "21", compat: "new" }
-          - { mc: "1.21.8", java: "21", compat: "old" }
-          - { mc: "1.21.7", java: "21", compat: "old" }
-          - { mc: "1.21.6", java: "21", compat: "old" }
-          - { mc: "1.21.5", java: "21", compat: "old" }
-          - { mc: "1.21.4", java: "21", compat: "old" }
-          - { mc: "1.21.1", java: "21", compat: "old" }
-          - { mc: "1.21", java: "21", compat: "old" }
+        mc:
+          - "1.21.11"
+          - "1.21.10"
+          - "1.21.9"
+          - "1.21.8"
+          - "1.21.7"
+          - "1.21.6"
+          - "1.21.5"
+          - "1.21.4"
+          - "1.21.3"
+          - "1.21.2"
+          - "1.21.1"
+          - "1.21"
+          - "1.20.6"
+          - "1.20.5"
+          - "1.20.4"
+          - "1.20.3"
+          - "1.20.2"
+          - "1.20.1"
+          - "1.20"
 
     name: Minecraft ${{ matrix.mc }}
     steps:
@@ -38,9 +48,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: |
-            ${{ matrix.java }}
-            21
+          java-version: "21"
 
       - uses: gradle/actions/setup-gradle@v4
         with:
@@ -66,8 +74,6 @@ jobs:
           -Pminecraft_version=${{ matrix.mc }}
           -Pyarn_mappings=${{ steps.deps.outputs.yarn }}
           -Pfabric_version=${{ steps.deps.outputs.api }}
-          -Pjava_version=${{ matrix.java }}
-          -Pcompat=${{ matrix.compat }}
           -Parchives_base_name=ray-client-mc${{ matrix.mc }}
 
       - uses: actions/upload-artifact@v4

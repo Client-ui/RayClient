@@ -3,13 +3,12 @@ package dev.ray;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderTickCounter;
 
 /** Draws your saved waypoints in the world: a diamond at the spot with its name and distance. */
 public final class WaypointMarkers {
 	private WaypointMarkers() {}
 
-	public static void render(DrawContext ctx, RenderTickCounter tickCounter) {
+	public static void render(DrawContext ctx, Tick tickCounter) {
 		RayConfig cfg = RayConfig.get();
 		if (!cfg.waypointMarkers || cfg.waypoints.isEmpty()) return;
 		MinecraftClient mc = MinecraftClient.getInstance();
@@ -34,12 +33,12 @@ public final class WaypointMarkers {
 			int col = Theme.COLORS[i % Theme.COLORS.length] | 0xFF000000;
 
 			// diamond (a square turned 45 degrees) with a dark outline
-			ctx.getMatrices().pushMatrix();
-			ctx.getMatrices().translate(s[0], s[1]);
-			ctx.getMatrices().rotate((float) (Math.PI / 4.0));
+			Gfx.push(ctx);
+			Gfx.translate(ctx, s[0], s[1]);
+			Gfx.rotate(ctx, (float) (Math.PI / 4.0));
 			ctx.fill(-4, -4, 4, 4, 0xB0000000);
 			ctx.fill(-3, -3, 3, 3, col);
-			ctx.getMatrices().popMatrix();
+			Gfx.pop(ctx);
 
 			// name above, distance below
 			int x = Math.round(s[0]), y = Math.round(s[1]);

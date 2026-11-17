@@ -163,22 +163,22 @@ public class MinimapModule extends HudModule {
 				}
 				int col = Theme.COLORS[i % Theme.COLORS.length] | 0xFF000000;
 				if (outside) col = Theme.fade(col, 0.7f);
-				ctx.getMatrices().pushMatrix();
-				ctx.getMatrices().translate((float) (x + half + rx), (float) (y + half + rz));
-				ctx.getMatrices().rotate((float) (Math.PI / 4.0));
+				Gfx.push(ctx);
+				Gfx.translate(ctx, (float) (x + half + rx), (float) (y + half + rz));
+				Gfx.rotate(ctx, (float) (Math.PI / 4.0));
 				ctx.fill(-3, -3, 3, 3, 0xCC000000);
 				ctx.fill(-2, -2, 2, 2, col);
-				ctx.getMatrices().popMatrix();
+				Gfx.pop(ctx);
 			}
 		}
 
 		// you: an arrow pointing the way you face (map is north-up, +Z is down)
-		ctx.getMatrices().pushMatrix();
-		ctx.getMatrices().translate((float) (x + half), (float) (y + half));
-		ctx.getMatrices().rotate((float) (Math.toRadians(mc.player.getYaw()) + Math.PI));
+		Gfx.push(ctx);
+		Gfx.translate(ctx, (float) (x + half), (float) (y + half));
+		Gfx.rotate(ctx, (float) (Math.toRadians(mc.player.getYaw()) + Math.PI));
 		ctx.fill(-3, -5, 4, 2, 0x66000000);
 		for (int i = 0; i < 5; i++) ctx.fill(-(i / 2), -4 + i, (i / 2) + 1, -3 + i, 0xFFFFFFFF);
-		ctx.getMatrices().popMatrix();
+		Gfx.pop(ctx);
 
 		if (opt("north") == 1) ClientFont.draw(ctx, tr, "N", x + w / 2 - 2, y + 2, 0xFFFFFFFF, true);
 	}
